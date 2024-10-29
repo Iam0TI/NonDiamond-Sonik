@@ -11,7 +11,7 @@ import {LibDiamond} from "../libraries/LibDiamond.sol";
 // i.e people can only claim within a certain time
 // owners cannot withdraw tokens within that time
 
-contract SonikDrop {
+contract SonikDropFacet {
     // @dev prevents zero address from interacting with the contract
     function sanityCheck(address _user) private pure {
         if (_user == address(0)) {

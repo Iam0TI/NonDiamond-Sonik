@@ -4,7 +4,7 @@ import {LibDiamond} from "../libraries/LibDiamond.sol";
 import {SonikDrop} from "./SonikDropFacet.sol";
 import {Errors, Events} from "../libraries/Utils.sol";
 
-contract SonikDropFactory {
+contract FactoryFacet {
     //  when a person interacts with the factory, he would options like
     // 1. Adding an NFT requirement
     // 2. Adding a time lock
@@ -103,11 +103,6 @@ contract SonikDropFactory {
     {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         return ds.allSonikDropClones;
-    }
-
-    function transferOwnership(address _newOwner) external {
-        LibDiamond.enforceIsContractOwner();
-        LibDiamond.setContractOwner(_newOwner);
     }
 
     function readSonikClone(

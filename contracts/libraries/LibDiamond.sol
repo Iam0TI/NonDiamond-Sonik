@@ -62,14 +62,17 @@ library LibDiamond {
         mapping(bytes4 => bool) supportedInterfaces;
         // owner of the contract
         address contractOwner;
-        /*==================== Sonik Storage ====================*/
+        /*==================== Sonik Token Airdrop Storage ====================*/
         uint256 cloneCount;
         mapping(address => address[]) ownerToSonikDropCloneContracts;
         mapping(address => SonikDropObj) sonikContractToObj;
         SonikDropObj[] allSonikDropClones;
 
-        mapping(address user => mapping(address airdropContract => bool)) hasUserClaimedAirdrop;
+        // maps user address => sonik contract address => bool
+        // hasUserClaimedAirdrop[user][sonikCloneContract] -> bool
+        mapping(address => mapping(address => bool)) hasUserClaimedAirdrop;
 
+        /*==================== Sonik POAP Storage ====================*/
     }
 
     function diamondStorage()
