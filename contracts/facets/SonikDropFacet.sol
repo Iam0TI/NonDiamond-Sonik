@@ -6,12 +6,13 @@ import {IERC20} from "../interfaces/IERC20.sol";
 import {IERC721} from "../interfaces/IERC721.sol";
 import {Errors, Events} from "../libraries/Utils.sol";
 import {LibDiamond} from "../libraries/LibDiamond.sol";
+import {ECDSA} from "../libraries/ECDSA.sol";
 
 // another possible feature is time-locking the airdrop
 // i.e people can only claim within a certain time
 // owners cannot withdraw tokens within that time
 
-contract SonikDropFacet {
+contract SonikDrop {
     // @dev prevents zero address from interacting with the contract
     function sanityCheck(address _user) private pure {
         if (_user == address(0)) {
@@ -100,10 +101,20 @@ contract SonikDropFacet {
         return MerkleProof.verify(_merkleProof, sonikObj.merkleRoot, leaf);
     }
 
+    function _verifySignature(
+        bytes32 digest,
+        bytes memory signature
+    ) private view returns (bool) {
+        return ECDSA.recover(digest, signature) == msg.sender;
+    }
+
+    // require msg.sender to sign a message before claiming
     // @user for claiming airdrop
     function claimAirdrop(
         uint256 _amount,
-        bytes32[] calldata _merkleProof
+        bytes32[] calldata _merkleProof,
+        bytes32 digest,
+        bytes memory signature
     ) external {
         sanityCheck(msg.sender);
         LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
@@ -111,6 +122,10 @@ contract SonikDropFacet {
         if (sonikObj.isNftRequired) {
             claimAirdrop(_amount, _merkleProof, 0);
             return;
+        }
+
+        if(!_verifySignature(digest, signature)){
+            revert Errors.InvalidSignature();
         }
 
         // check if User has claimed before
@@ -324,7 +339,11 @@ contract SonikDropFacet {
         stateSonikClone.isTimeLocked = _claimTime != 0;
         stateSonikClone.airdropEndTime = block.timestamp + _claimTime;
 
-        emit Events.ClaimTimeUpdated(msg.sender, _claimTime, stateSonikObj.airdropEndTime);
+        emit Events.ClaimTimeUpdated(
+            msg.sender,
+            _claimTime,
+            stateSonikObj.airdropEndTime
+        );
     }
 
     function updateClaimersNumber(uint256 _noOfClaimers) external {

@@ -18,8 +18,7 @@ library Errors {
     error AirdropClaimTimeNotEnded();
     error TotalClaimersExceeded();
     error InsufficientContractBalance();
-    // error FeeIsRequired();
-    // error FeeNotSet();
+    error InvalidSignature();
 }
 
 library Events {

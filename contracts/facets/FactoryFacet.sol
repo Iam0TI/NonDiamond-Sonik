@@ -41,8 +41,8 @@ contract FactoryFacet {
             isNftRequired: _nftAddress != address(0),
             isTimeLocked: _claimTime != 0,
             airdropEndTime: block.timestamp + _claimTime,
-            totalAmountSpent : 0,
-            totalNoOfClaimed : 0
+            totalAmountSpent: 0,
+            totalNoOfClaimed: 0
         });
         ds.ownerToSonikDropCloneContracts[msg.sender].push(address(newSonik_));
         ds.sonikContractToObj[address(newSonik_)] = _newSonikObj;
@@ -91,9 +91,19 @@ contract FactoryFacet {
 
     function getOwnerSonikDropClones(
         address _owner
-    ) external view returns (address[] memory) {
+    ) external view returns (LibDiamond.SonikDropObj[] memory) {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        return ds.ownerToSonikDropCloneContracts[_owner];
+        address[] memory cloneContractAddresses = ds
+            .ownerToSonikDropCloneContracts[_owner];
+
+        LibDiamond.SonikDropObj[]
+            memory sonikDropObjs = new LibDiamond.SonikDropObj[](
+                cloneContractAddresses.length
+            );
+        for (uint i = 0; i < cloneContractAddresses.length; i++) {
+            sonikDropObjs[i] = ds.sonikContractToObj[cloneContractAddresses[i]];
+        }
+        return sonikDropObjs;
     }
 
     function getAllSonikDropClones()
