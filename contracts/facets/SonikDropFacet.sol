@@ -81,7 +81,13 @@ contract SonikDrop {
         return IERC20(sonikObj.tokenAddress).balanceOf(address(this));
     }
 
+    // how do we check for eligibility of a user without requiring the amount
+    // reason: most users wont know their allocations until they check
+    // checking eligibility should then reveal their allocation
+
     // @user check for eligibility
+    // this function should check the eligibility and return (bool, uint256)
+    
     function checkEligibility(
         address _user,
         uint256 _amount,
@@ -101,6 +107,7 @@ contract SonikDrop {
         return MerkleProof.verify(_merkleProof, sonikObj.merkleRoot, leaf);
     }
 
+    // verify user signature
     function _verifySignature(
         bytes32 digest,
         bytes memory signature
@@ -120,11 +127,18 @@ contract SonikDrop {
         LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
         // check if NFT is required
         if (sonikObj.isNftRequired) {
-            claimAirdrop(_amount, _merkleProof, 0);
+            claimAirdrop(
+                _amount,
+                _merkleProof,
+                type(uint256).max,
+                digest,
+                signature
+            );
             return;
         }
 
-        if(!_verifySignature(digest, signature)){
+        // verify user signature
+        if (!_verifySignature(digest, signature)) {
             revert Errors.InvalidSignature();
         }
 
@@ -164,11 +178,22 @@ contract SonikDrop {
     function claimAirdrop(
         uint256 _amount,
         bytes32[] calldata _merkleProof,
-        uint256 _tokenId
+        uint256 _tokenId,
+        bytes32 digest,
+        bytes memory signature
     ) public {
         sanityCheck(msg.sender);
+
+        if (_tokenId == type(uint256).max) {
+            revert Errors.InvalidTokenId();
+        }
         if (_hasClaimedAirdrop(msg.sender)) {
             revert Errors.HasClaimedRewardsAlready();
+        }
+
+        // verify user signature
+        if (!_verifySignature(digest, signature)) {
+            revert Errors.InvalidSignature();
         }
 
         //    checks if User is eligible

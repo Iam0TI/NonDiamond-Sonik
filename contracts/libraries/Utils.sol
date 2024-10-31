@@ -19,6 +19,7 @@ library Errors {
     error TotalClaimersExceeded();
     error InsufficientContractBalance();
     error InvalidSignature();
+    error InvalidTokenId();
 }
 
 library Events {
