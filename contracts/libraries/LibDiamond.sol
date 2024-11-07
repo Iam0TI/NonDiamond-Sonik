@@ -37,11 +37,11 @@ library LibDiamond {
     struct SonikDropObj {
         uint256 id;
         address tokenAddress;
+        bool isNftRequired;
+        bool isTimeLocked;
         address nftAddress;
         address contractAddress;
         address owner;
-        bool isNftRequired;
-        bool isTimeLocked;
         bytes32 merkleRoot;
         uint256 claimTime;
         uint256 airdropEndTime;
@@ -66,7 +66,7 @@ library LibDiamond {
         uint256 cloneCount;
         mapping(address => address[]) ownerToSonikDropCloneContracts;
         mapping(address => SonikDropObj) sonikContractToObj;
-        SonikDropObj[] allSonikDropClones;
+        address[] allSonikDropClones;
 
         // maps user address => sonik contract address => bool
         // hasUserClaimedAirdrop[user][sonikCloneContract] -> bool

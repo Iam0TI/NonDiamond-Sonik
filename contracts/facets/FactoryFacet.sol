@@ -46,7 +46,7 @@ contract FactoryFacet {
         });
         ds.ownerToSonikDropCloneContracts[msg.sender].push(address(newSonik_));
         ds.sonikContractToObj[address(newSonik_)] = _newSonikObj;
-        ds.allSonikDropClones.push(_newSonikObj);
+        ds.allSonikDropClones.push(address(newSonik_));
         ++ds.cloneCount;
 
         emit Events.SonikCloneCreated(
@@ -109,7 +109,7 @@ contract FactoryFacet {
     function getAllSonikDropClones()
         external
         view
-        returns (LibDiamond.SonikDropObj[] memory)
+        returns (address[] memory)
     {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         return ds.allSonikDropClones;
