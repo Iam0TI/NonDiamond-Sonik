@@ -5,11 +5,12 @@ import "../contracts/interfaces/IDiamondCut.sol";
 import "../contracts/facets/DiamondCutFacet.sol";
 import "../contracts/facets/DiamondLoupeFacet.sol";
 import "../contracts/facets/OwnershipFacet.sol";
-import {FactoryFacet} from "../contracts/facets/FactoryFacet.sol";
+import {AirdropFactoryFacet} from "../contracts/facets/FactoryFacet.sol";
 import {SonikDrop} from "../contracts/facets/SonikDropFacet.sol";
 import "../contracts/Diamond.sol";
 
 import "./helpers/DiamondUtils.sol";
+
 
 contract DiamondDeployer is DiamondUtils, IDiamondCut {
     //contract types of facets to be deployed
@@ -17,7 +18,7 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
     DiamondCutFacet dCutFacet;
     DiamondLoupeFacet dLoupe;
     OwnershipFacet ownerF;
-    FactoryFacet factoryF;
+    AirdropFactoryFacet factoryF;
     SonikDrop sonikDropF;
 
     function setUp() public {
@@ -26,7 +27,7 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
         diamond = new Diamond(address(this), address(dCutFacet));
         dLoupe = new DiamondLoupeFacet();
         ownerF = new OwnershipFacet();
-        factoryF = new FactoryFacet();
+        factoryF = new AirdropFactoryFacet();
         //upgrade diamond with facets
 
         //build cut struct

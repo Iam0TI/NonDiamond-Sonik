@@ -73,6 +73,14 @@ library LibDiamond {
         mapping(address => mapping(address => bool)) hasUserClaimedAirdrop;
 
         /*==================== Sonik POAP Storage ====================*/
+        // this is for a single NFT
+        string _name;
+        // Token symbol
+        string _symbol;
+        mapping(uint256  => address) _owners;
+        mapping(address  => uint256) _balances;
+        mapping(uint256  => address) _tokenApprovals;
+        mapping(address  => mapping(address => bool)) _operatorApprovals;
     }
 
     function diamondStorage()
