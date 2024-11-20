@@ -9,10 +9,10 @@ import {LibDiamond} from "../libraries/LibDiamond.sol";
 import {ECDSA} from "../libraries/ECDSA.sol";
 import {Strings} from "../libraries/utils/Strings.sol";
 
-abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
-       using Strings for uint256;
+abstract contract ERC721Facet is IERC721, IERC721Metadata {
+    using Strings for uint256;
 
-      function sanityCheck(address _user) internal pure {
+    function sanityCheck(address _user) internal pure {
         if (_user == address(0)) {
             revert Errors.ZeroAddressDetected();
         }
@@ -29,21 +29,13 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
 
     function getWritableSonikObj() internal view returns (LibDiamond.SonikPoapObj storage) {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        LibDiamond.SonikPoapObj storage stateSonikObj = ds.sonikContractToPoapObj[
-            address(this)
-        ];
+        LibDiamond.SonikPoapObj storage stateSonikObj = ds.sonikContractToPoapObj[address(this)];
         return (stateSonikObj);
     }
 
-  
-
-   function initialize(
-        string memory _name,
-        string memory _symbol,
-        string memory baseURI
-    ) external {
-       onlyOwner();
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj() ;
+    function initialize(string memory _name, string memory _symbol, string memory baseURI) external {
+        onlyOwner();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
 
         if (ds.isTokenInitialized) {
             revert IERC721Errors.CannotReinitializeToken();
@@ -56,8 +48,8 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
         ds.isTokenInitialized = true;
     }
 
-     function balanceOf(address owner) public view virtual returns (uint256) {
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+    function balanceOf(address owner) public view virtual returns (uint256) {
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         if (owner == address(0)) {
             revert IERC721Errors.ERC721InvalidOwner(address(0));
         }
@@ -75,7 +67,7 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      * @dev See {IERC721Metadata-name}.
      */
     function name() public view virtual returns (string memory) {
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         return ds._name;
     }
 
@@ -83,7 +75,7 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      * @dev See {IERC721Metadata-symbol}.
      */
     function symbol() public view virtual returns (string memory) {
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         return ds._symbol;
     }
 
@@ -134,7 +126,7 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      * @dev See {IERC721-isApprovedForAll}.
      */
     function isApprovedForAll(address owner, address operator) public view virtual returns (bool) {
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         return ds._operatorApprovals[owner][operator];
     }
 
@@ -153,8 +145,6 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
         }
     }
 
-
-   
     /**
      * @dev Returns the owner of the `tokenId`. Does NOT revert if token doesn't exist
      *
@@ -164,7 +154,7 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      * `balanceOf(a)` must be equal to the number of tokens such that `_ownerOf(tokenId)` is `a`.
      */
     function _ownerOf(uint256 tokenId) internal view virtual returns (address) {
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         return ds._owners[tokenId];
     }
 
@@ -172,7 +162,7 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      * @dev Returns the approved address for `tokenId`. Returns 0 if `tokenId` is not minted.
      */
     function _getApproved(uint256 tokenId) internal view virtual returns (address) {
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         return ds._tokenApprovals[tokenId];
     }
 
@@ -184,9 +174,8 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      * assumption.
      */
     function _isAuthorized(address owner, address spender, uint256 tokenId) internal view virtual returns (bool) {
-        return
-            spender != address(0) &&
-            (owner == spender || isApprovedForAll(owner, spender) || _getApproved(tokenId) == spender);
+        return spender != address(0)
+            && (owner == spender || isApprovedForAll(owner, spender) || _getApproved(tokenId) == spender);
     }
 
     /**
@@ -219,7 +208,7 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      * remain consistent with one another.
      */
     function _increaseBalance(address account, uint128 value) internal virtual {
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         unchecked {
             ds._balances[account] += value;
         }
@@ -238,7 +227,7 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      */
     function _update(address to, uint256 tokenId, address auth) internal virtual returns (address) {
         address from = _ownerOf(tokenId);
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         // Perform (optional) operator check
         if (auth != address(0)) {
             _checkAuthorized(from, auth, tokenId);
@@ -288,7 +277,29 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
             revert IERC721Errors.ERC721InvalidSender(address(0));
         }
     }
+    /**
+     * @dev Mints `tokenId`, transfers it to `to` and checks for `to` acceptance.
+     *
+     * Requirements:
+     *
+     * - `tokenId` must not exist.
+     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
+     *
+     * Emits a {Transfer} event.
+     */
 
+    function _safeMint(address to, uint256 tokenId) internal {
+        _safeMint(to, tokenId, "");
+    }
+
+    /**
+     * @dev Same as {xref-ERC721-_safeMint-address-uint256-}[`_safeMint`], with an additional `data` parameter which is
+     * forwarded in {IERC721Receiver-onERC721Received} to contract recipients.
+     */
+    function _safeMint(address to, uint256 tokenId, bytes memory data) internal virtual {
+        _mint(to, tokenId);
+        ERC721Utils.checkOnERC721Received(msg.sender, address(0), to, tokenId, data);
+    }
 
     /**
      * @dev Destroys `tokenId`.
@@ -331,7 +342,6 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
         }
     }
 
-   
     /**
      * @dev Approve `to` to operate on `tokenId`
      *
@@ -351,7 +361,6 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      * emitted in the context of transfers.
      */
     function _approve(address to, uint256 tokenId, address auth, bool emitEvent) internal virtual {
-
         // Avoid reading the owner unless necessary
         if (emitEvent || auth != address(0)) {
             address owner = _requireOwned(tokenId);
@@ -365,7 +374,7 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
                 emit Approval(owner, to, tokenId);
             }
         }
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         ds._tokenApprovals[tokenId] = to;
     }
 
@@ -378,7 +387,7 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
      * Emits an {ApprovalForAll} event.
      */
     function _setApprovalForAll(address owner, address operator, bool approved) internal virtual {
-        LibDiamond.SonikPoapObj storage ds =getWritableSonikObj();
+        LibDiamond.SonikPoapObj storage ds = getWritableSonikObj();
         if (operator == address(0)) {
             revert IERC721Errors.ERC721InvalidOperator(operator);
         }
@@ -400,32 +409,20 @@ abstract contract ERC721Facet  is  IERC721, IERC721Metadata {
         return owner;
     }
 
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public {
+    function safeTransferFrom(address from, address to, uint256 tokenId) public {
         safeTransferFrom(from, to, tokenId, "");
     }
 
     /**
      * @dev See {IERC721-safeTransferFrom}.
      */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
-    ) public {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public {
         transferFrom(from, to, tokenId);
         ERC721Utils.checkOnERC721Received(msg.sender, from, to, tokenId, data);
     }
 
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
-        return
-            interfaceId == type(IERC721).interfaceId ||
-            interfaceId == type(IERC165).interfaceId ||
-            interfaceId == type(IERC721Metadata).interfaceId;
+        return interfaceId == type(IERC721).interfaceId || interfaceId == type(IERC165).interfaceId
+            || interfaceId == type(IERC721Metadata).interfaceId;
     }
-
 }
