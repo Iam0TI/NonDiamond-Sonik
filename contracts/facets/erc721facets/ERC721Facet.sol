@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import {IERC721} from "../interfaces/IERC721.sol";
-import {IERC165} from "../interfaces/IERC165.sol";
-import {IERC721Metadata} from "../interfaces/IERC721Metadata.sol";
-import {Errors, Events, IERC721Errors, ERC721Utils} from "../libraries/Utils.sol";
-import {LibDiamond} from "../libraries/LibDiamond.sol";
-import {ECDSA} from "../libraries/ECDSA.sol";
-import {Strings} from "../libraries/utils/Strings.sol";
+import {IERC721} from "../../interfaces/IERC721.sol";
+import {IERC165} from "../../interfaces/IERC165.sol";
+import {IERC721Metadata} from "../../interfaces/IERC721Metadata.sol";
+import {Errors, Events, IERC721Errors, ERC721Utils} from "../../libraries/Utils.sol";
+import {LibDiamond} from "../../libraries/LibDiamond.sol";
+import {ECDSA} from "../../libraries/ECDSA.sol";
+import {Strings} from "../../libraries/utils/Strings.sol";
 
 abstract contract ERC721Facet is IERC721, IERC721Metadata {
     using Strings for uint256;

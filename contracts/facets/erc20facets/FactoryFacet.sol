@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
-import {LibDiamond} from "../libraries/LibDiamond.sol";
-import {IERC20} from "../interfaces/IERC20.sol";
+import {LibDiamond} from "../../libraries/LibDiamond.sol";
+import {IERC20} from "../../interfaces/IERC20.sol";
 import {SonikDrop} from "./SonikDropFacet.sol";
-import {Errors, Events} from "../libraries/Utils.sol";
+import {Errors, Events} from "../../libraries/Utils.sol";
 
 contract AirdropFactoryFacet {
     //  when a person interacts with the factory, he would options like
