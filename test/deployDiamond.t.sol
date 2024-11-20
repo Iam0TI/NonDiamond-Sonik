@@ -12,6 +12,7 @@ import "../contracts/Diamond.sol";
 import "./helpers/DiamondUtils.sol";
 
 
+
 contract DiamondDeployer is DiamondUtils, IDiamondCut {
     //contract types of facets to be deployed
     Diamond diamond;
@@ -27,6 +28,8 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
         diamond = new Diamond(address(this), address(dCutFacet));
         dLoupe = new DiamondLoupeFacet();
         ownerF = new OwnershipFacet();
+
+        
         factoryF = new AirdropFactoryFacet();
         //upgrade diamond with facets
 
@@ -62,6 +65,17 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
 
         //call a function
         DiamondLoupeFacet(address(diamond)).facetAddresses();
+
+
+        //interact with factory
+        address[] memory addresses = AirdropFactoryFacet(address(diamond)).getAllSonikDropClones();
+        assertEq(addresses.length, 0 );
+
+        // create sonik token drop without NFT
+        address _tokenAddress = address(0x01);
+        bytes32 _merkleRoot = 0x29c08bc8bf7d3a0ed4b1dd16063389608cf9dec220f1584e32d317c2041e1fa4;
+        uint256 _noOfClaimers = 100;
+        uint256 _totalOutputTokens = 1000;
     }
 
     function testCreateSonikDrop() public {
