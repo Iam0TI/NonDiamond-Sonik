@@ -11,7 +11,13 @@ import "../contracts/Diamond.sol";
 
 import "./helpers/DiamondUtils.sol";
 
+contract TestERC20 is ERC20 {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
 
+    function mint(address to, uint256 amount) public {
+        _mint(to, amount);
+    }
+}
 
 contract DiamondDeployer is DiamondUtils, IDiamondCut {
     //contract types of facets to be deployed
@@ -22,14 +28,17 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
     AirdropFactoryFacet factoryF;
     SonikDrop sonikDropF;
 
+    address owner = makeAddr("youngancient");
+
     function setUp() public {
         //deploy facets
+        
+
         dCutFacet = new DiamondCutFacet();
         diamond = new Diamond(address(this), address(dCutFacet));
         dLoupe = new DiamondLoupeFacet();
         ownerF = new OwnershipFacet();
 
-        
         factoryF = new AirdropFactoryFacet();
         //upgrade diamond with facets
 
