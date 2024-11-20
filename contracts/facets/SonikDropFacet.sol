@@ -35,20 +35,14 @@ contract SonikDrop {
         }
     }
 
-    function readSonikObj()
-        public
-        view
-        returns (LibDiamond.SonikDropObj memory)
-    {
+    function readSonikObj() public view returns (LibDiamond.SonikDropObj memory) {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         return ds.sonikContractToObj[address(this)];
     }
 
     function getWritableSonikObj() private view returns (LibDiamond.SonikDropObj storage) {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        LibDiamond.SonikDropObj storage stateSonikObj = ds.sonikContractToObj[
-            address(this)
-        ];
+        LibDiamond.SonikDropObj storage stateSonikObj = ds.sonikContractToObj[address(this)];
         return (stateSonikObj);
     }
 
@@ -77,10 +71,7 @@ contract SonikDrop {
 
     // @user check for eligibility
 
-    function checkEligibility(
-        uint256 _amount,
-        bytes32[] calldata _merkleProof
-    ) public view returns (bool) {
+    function checkEligibility(uint256 _amount, bytes32[] calldata _merkleProof) public view returns (bool) {
         sanityCheck(msg.sender);
         if (_hasClaimedAirdrop(msg.sender)) {
             return false;
@@ -96,32 +87,20 @@ contract SonikDrop {
     }
 
     // verify user signature
-    function _verifySignature(
-        bytes32 digest,
-        bytes memory signature
-    ) private view returns (bool) {
+    function _verifySignature(bytes32 digest, bytes memory signature) private view returns (bool) {
         return ECDSA.recover(digest, signature) == msg.sender;
     }
 
     // require msg.sender to sign a message before claiming
     // @user for claiming airdrop
-    function claimAirdrop(
-        uint256 _amount,
-        bytes32[] calldata _merkleProof,
-        bytes32 digest,
-        bytes memory signature
-    ) external {
+    function claimAirdrop(uint256 _amount, bytes32[] calldata _merkleProof, bytes32 digest, bytes memory signature)
+        external
+    {
         sanityCheck(msg.sender);
         LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
         // check if NFT is required
         if (sonikObj.isNftRequired) {
-            claimAirdrop(
-                _amount,
-                _merkleProof,
-                type(uint256).max,
-                digest,
-                signature
-            );
+            claimAirdrop(_amount, _merkleProof, type(uint256).max, digest, signature);
             return;
         }
 
@@ -146,7 +125,7 @@ contract SonikDrop {
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj( );
+        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
 
         ds.hasUserClaimedAirdrop[msg.sender][address(this)] = true;
         stateSonikObj.totalAmountSpent += _amount;
@@ -192,7 +171,7 @@ contract SonikDrop {
         }
 
         // @dev checks if user has the required NFT
-        if (IERC721(sonikObj.nftAddress).ownerOf(_tokenId) != msg.sender) {
+        if (IERC721(sonikObj.nftAddress).balanceOf(msg.sender) > 0) {
             revert Errors.NFTNotFound();
         }
 
@@ -206,7 +185,7 @@ contract SonikDrop {
             revert Errors.InsufficientContractBalance();
         }
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj( );
+        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
 
         stateSonikObj.totalNoOfClaimed += 1;
 
@@ -229,7 +208,7 @@ contract SonikDrop {
         LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
         bytes32 _oldMerkleRoot = sonikObj.merkleRoot;
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj( );
+        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
 
         stateSonikObj.merkleRoot = _newMerkleRoot;
 
@@ -238,7 +217,6 @@ contract SonikDrop {
 
     // @user get current merkle proof
     function getMerkleRoot() external view returns (bytes32) {
-        onlyOwner();
         LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
         return sonikObj.merkleRoot;
     }
@@ -260,12 +238,7 @@ contract SonikDrop {
             }
         }
 
-        if (
-            !IERC20(sonikObj.tokenAddress).transfer(
-                sonikObj.owner,
-                contractBalance
-            )
-        ) {
+        if (!IERC20(sonikObj.tokenAddress).transfer(sonikObj.owner, contractBalance)) {
             revert Errors.WithdrawalFailed();
         }
 
@@ -277,13 +250,7 @@ contract SonikDrop {
         onlyOwner();
         zeroValueCheck(_amount);
         LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-        if (
-            !IERC20(sonikObj.tokenAddress).transferFrom(
-                msg.sender,
-                address(this),
-                _amount
-            )
-        ) {
+        if (!IERC20(sonikObj.tokenAddress).transferFrom(msg.sender, address(this), _amount)) {
             revert Errors.TransferFailed();
         }
         emit Events.AirdropTokenDeposited(msg.sender, _amount);
@@ -297,7 +264,7 @@ contract SonikDrop {
             revert Errors.CannotSetAddressTwice();
         }
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj( );
+        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
 
         stateSonikObj.isNftRequired = true;
 
@@ -308,7 +275,7 @@ contract SonikDrop {
         onlyOwner();
         // LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj( );
+        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
 
         stateSonikObj.isNftRequired = false;
         stateSonikObj.nftAddress = address(0);
@@ -320,16 +287,12 @@ contract SonikDrop {
         onlyOwner();
         // LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj( );
+        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
 
         stateSonikObj.isTimeLocked = _claimTime != 0;
         stateSonikObj.airdropEndTime = block.timestamp + _claimTime;
 
-        emit Events.ClaimTimeUpdated(
-            msg.sender,
-            _claimTime,
-            stateSonikObj.airdropEndTime
-        );
+        emit Events.ClaimTimeUpdated(msg.sender, _claimTime, stateSonikObj.airdropEndTime);
     }
 
     function updateClaimersNumber(uint256 _noOfClaimers) external {
@@ -338,14 +301,10 @@ contract SonikDrop {
 
         // LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj( );
+        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
 
         stateSonikObj.totalNoOfClaimers = _noOfClaimers;
 
-        emit Events.ClaimersNumberUpdated(
-            msg.sender,
-            block.timestamp,
-            _noOfClaimers
-        );
+        emit Events.ClaimersNumberUpdated(msg.sender, block.timestamp, _noOfClaimers);
     }
 }
