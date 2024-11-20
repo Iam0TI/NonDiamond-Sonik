@@ -67,7 +67,7 @@ contract SonikDrop {
 
     // @dev checks contract token balance
     function getContractBalance() public view returns (uint256) {
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
+          LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
         return IERC20(sonikObj.tokenAddress).balanceOf(address(this));
     }
 
@@ -238,7 +238,7 @@ contract SonikDrop {
 
     // @user get current merkle proof
     function getMerkleRoot() external view returns (bytes32) {
-        onlyOwner();
+     
         LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
         return sonikObj.merkleRoot;
     }
