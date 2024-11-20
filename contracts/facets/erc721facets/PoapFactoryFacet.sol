@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import {LibDiamond} from "../libraries/LibDiamond.sol";
+import {LibDiamond} from "../../libraries/LibDiamond.sol";
 import {SonikPoapFacet} from "./SonikPoapFacet.sol";
-import {Errors, Events} from "../libraries/Utils.sol";
+import {Errors, Events} from "../../libraries/Utils.sol";
 
 contract PoapFactoryFacet {
     function _createSonikPoap(

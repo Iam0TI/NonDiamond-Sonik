@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import {MerkleProof} from "../libraries/MerkleProof.sol";
-import {IERC20} from "../interfaces/IERC20.sol";
-import {IERC721} from "../interfaces/IERC721.sol";
-import {Errors, Events} from "../libraries/Utils.sol";
-import {LibDiamond} from "../libraries/LibDiamond.sol";
-import {ECDSA} from "../libraries/ECDSA.sol";
+import {MerkleProof} from "../../libraries/MerkleProof.sol";
+import {IERC20} from "../../interfaces/IERC20.sol";
+import {IERC721} from "../../interfaces/IERC721.sol";
+import {Errors, Events} from "../../libraries/Utils.sol";
+import {LibDiamond} from "../../libraries/LibDiamond.sol";
+import {ECDSA} from "../../libraries/ECDSA.sol";
 
 // another possible feature is time-locking the airdrop
 // i.e people can only claim within a certain time

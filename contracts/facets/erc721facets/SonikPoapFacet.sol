@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import {IERC721} from "../interfaces/IERC721.sol";
-import {MerkleProof} from "../libraries/MerkleProof.sol";
-import {Errors, Events, IERC721Errors, ERC721Utils} from "../libraries/Utils.sol";
-import {LibDiamond} from "../libraries/LibDiamond.sol";
-import {ECDSA} from "../libraries/ECDSA.sol";
+import {IERC721} from "../../interfaces/IERC721.sol";
+import {MerkleProof} from "../../libraries/MerkleProof.sol";
+import {Errors, Events, IERC721Errors, ERC721Utils} from "../../libraries/Utils.sol";
+import {LibDiamond} from "../../libraries/LibDiamond.sol";
+import {ECDSA} from "../../libraries/ECDSA.sol";
 import {ERC721Facet} from "./ERC721Facet.sol";
 
 contract SonikPoapFacet is ERC721Facet {

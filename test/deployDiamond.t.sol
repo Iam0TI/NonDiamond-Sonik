@@ -5,8 +5,8 @@ import "../contracts/interfaces/IDiamondCut.sol";
 import "../contracts/facets/DiamondCutFacet.sol";
 import "../contracts/facets/DiamondLoupeFacet.sol";
 import "../contracts/facets/OwnershipFacet.sol";
-import {AirdropFactoryFacet} from "../contracts/facets/FactoryFacet.sol";
-import {SonikDrop} from "../contracts/facets/SonikDropFacet.sol";
+import {AirdropFactoryFacet} from "../contracts/facets/erc20facets/FactoryFacet.sol";
+import {SonikDrop} from "../contracts/facets/erc20facets/SonikDropFacet.sol";
 import "../contracts/Diamond.sol";
 
 import "./helpers/DiamondUtils.sol";
@@ -53,7 +53,7 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
             FacetCut({
                 facetAddress: address(factoryF),
                 action: FacetCutAction.Add,
-                functionSelectors: generateSelectors("FactoryFacet")
+                functionSelectors: generateSelectors("AirdropFactoryFacet")
             })
         );
 
