@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity 0.8.27;
 
 import {MerkleProof} from "../../libraries/MerkleProof.sol";
+
 import {IERC20} from "../../interfaces/IERC20.sol";
 import {IERC721} from "../../interfaces/IERC721.sol";
 import {Errors, Events} from "../../libraries/Utils.sol";
@@ -13,7 +14,44 @@ import {ECDSA} from "../../libraries/ECDSA.sol";
 // owners cannot withdraw tokens within that time
 
 contract SonikDrop {
+    bytes32 public merkleRoot;
+    address public owner;
+    address public tokenAddress;
+    address nftAddress; // for nft require drops
+    uint256 internal airdropEndTime;
+    uint256 internal claimTime;
+    uint256 internal totalNoOfClaimers;
+    uint256 internal totalNoOfClaimed;
+
+    uint256 internal totalAmountSpent; // total for airdrop token spent
+
+    bool isTimeLocked;
+    bool isNftRequired;
+
+    mapping(address user => bool claimed) public hasUserClaimedAirdrop;
+
+    constructor(
+        address _owner,
+        address _tokenAddress,
+        bytes32 _merkleRoot,
+        address _nftAddress,
+        uint256 _claimTime,
+        uint256 _noOfClaimers
+    ) {
+        merkleRoot = _merkleRoot;
+        owner = _owner;
+        tokenAddress = _tokenAddress;
+        nftAddress = _nftAddress;
+        isNftRequired = _nftAddress != address(0);
+
+        claimTime = _claimTime;
+        totalNoOfClaimers = _noOfClaimers;
+
+        isTimeLocked = _claimTime != 0;
+        airdropEndTime = block.timestamp + _claimTime;
+    }
     // @dev prevents zero address from interacting with the contract
+
     function sanityCheck(address _user) private pure {
         if (_user == address(0)) {
             revert Errors.ZeroAddressDetected();
@@ -29,64 +67,42 @@ contract SonikDrop {
     // @dev prevents users from accessing onlyOwner privileges
     function onlyOwner() private view {
         sanityCheck(msg.sender);
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-        if (msg.sender != sonikObj.owner) {
+        if (msg.sender != owner) {
             revert Errors.UnAuthorizedFunctionCall();
         }
     }
 
-    function readSonikObj() public view returns (LibDiamond.SonikDropObj memory) {
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        return ds.sonikContractToObj[address(this)];
-    }
-
-    function getWritableSonikObj() private view returns (LibDiamond.SonikDropObj storage) {
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        LibDiamond.SonikDropObj storage stateSonikObj = ds.sonikContractToObj[address(this)];
-        return (stateSonikObj);
-    }
-
-    // @dev returns if a user has claimed or not
-    function _hasClaimedAirdrop(address _user) private view returns (bool) {
-        sanityCheck(_user);
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        return ds.hasUserClaimedAirdrop[_user][address(this)];
-    }
-
-    // @dev returns if airdropTime has ended or not
+    // @dev returns if airdropTime has ended or not for time locked airdrop
     function hasAidropTimeEnded() public view returns (bool) {
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-        return block.timestamp > sonikObj.airdropEndTime;
+        return block.timestamp > airdropEndTime;
     }
 
     // @dev checks contract token balance
     function getContractBalance() public view returns (uint256) {
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-        return IERC20(sonikObj.tokenAddress).balanceOf(address(this));
+        return IERC20(tokenAddress).balanceOf(address(this));
     }
 
     // how do we check for eligibility of a user without requiring the amount
-    // reason: most users wont know their allocations until they check
+    // reason= most users wont know their allocations until they check
     // checking eligibility should then reveal their allocation
 
     // @user check for eligibility
 
     function checkEligibility(uint256 _amount, bytes32[] calldata _merkleProof) public view returns (bool) {
         sanityCheck(msg.sender);
-        if (_hasClaimedAirdrop(msg.sender)) {
+        if (hasUserClaimedAirdrop[msg.sender]) {
             return false;
         }
 
         // @dev we hash the encoded byte form of the user address and amount to create a leaf
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, _amount));
-
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender, _amount))));
 
         // @dev check if the merkleProof provided is valid or belongs to the merkleRoot
-        return MerkleProof.verify(_merkleProof, sonikObj.merkleRoot, leaf);
+        return MerkleProof.verify(_merkleProof, merkleRoot, leaf);
     }
 
     // verify user signature
+
     function _verifySignature(bytes32 digest, bytes memory signature) private view returns (bool) {
         return ECDSA.recover(digest, signature) == msg.sender;
     }
@@ -97,9 +113,9 @@ contract SonikDrop {
         external
     {
         sanityCheck(msg.sender);
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
+
         // check if NFT is required
-        if (sonikObj.isNftRequired) {
+        if (isNftRequired) {
             claimAirdrop(_amount, _merkleProof, type(uint256).max, digest, signature);
             return;
         }
@@ -110,7 +126,7 @@ contract SonikDrop {
         }
 
         // check if User has claimed before
-        if (_hasClaimedAirdrop(msg.sender)) {
+        if (hasUserClaimedAirdrop[msg.sender]) {
             revert Errors.HasClaimedRewardsAlready();
         }
 
@@ -119,18 +135,26 @@ contract SonikDrop {
             revert Errors.InvalidClaim();
         }
 
-        if (sonikObj.isTimeLocked && hasAidropTimeEnded()) {
+        if (isTimeLocked && hasAidropTimeEnded()) {
             revert Errors.AirdropClaimEnded();
         }
 
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        uint256 _currentNoOfClaims = totalNoOfClaimed;
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
+        if (_currentNoOfClaims + 1 > totalNoOfClaimers) {
+            revert Errors.TotalClaimersExceeded();
+        }
+        if (getContractBalance() < _amount) {
+            revert Errors.InsufficientContractBalance();
+        }
 
-        ds.hasUserClaimedAirdrop[msg.sender][address(this)] = true;
-        stateSonikObj.totalAmountSpent += _amount;
+        totalNoOfClaimed += 1;
 
-        if (!IERC20(sonikObj.tokenAddress).transfer(msg.sender, _amount)) {
+        hasUserClaimedAirdrop[msg.sender] = true;
+
+        totalAmountSpent += _amount;
+
+        if (!IERC20(tokenAddress).transfer(msg.sender, _amount)) {
             revert Errors.TransferFailed();
         }
 
@@ -150,7 +174,7 @@ contract SonikDrop {
         if (_tokenId == type(uint256).max) {
             revert Errors.InvalidTokenId();
         }
-        if (_hasClaimedAirdrop(msg.sender)) {
+        if (hasUserClaimedAirdrop[msg.sender]) {
             revert Errors.HasClaimedRewardsAlready();
         }
 
@@ -164,20 +188,18 @@ contract SonikDrop {
             revert Errors.InvalidClaim();
         }
 
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-
-        if (sonikObj.isTimeLocked && hasAidropTimeEnded()) {
+        if (isTimeLocked && hasAidropTimeEnded()) {
             revert Errors.AirdropClaimEnded();
         }
 
         // @dev checks if user has the required NFT
-        if (IERC721(sonikObj.nftAddress).balanceOf(msg.sender) > 0) {
+        if (IERC721(nftAddress).balanceOf(msg.sender) > 0) {
             revert Errors.NFTNotFound();
         }
 
-        uint256 _currentNoOfClaims = sonikObj.totalNoOfClaimed;
+        uint256 _currentNoOfClaims = totalNoOfClaimed;
 
-        if (_currentNoOfClaims + 1 > sonikObj.totalNoOfClaimers) {
+        if (_currentNoOfClaims + 1 > totalNoOfClaimers) {
             revert Errors.TotalClaimersExceeded();
         }
 
@@ -185,16 +207,13 @@ contract SonikDrop {
             revert Errors.InsufficientContractBalance();
         }
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
+        totalNoOfClaimed += 1;
 
-        stateSonikObj.totalNoOfClaimed += 1;
+        hasUserClaimedAirdrop[msg.sender] = true;
 
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        ds.hasUserClaimedAirdrop[msg.sender][address(this)] = true;
+        totalAmountSpent += _amount;
 
-        stateSonikObj.totalAmountSpent += _amount;
-
-        if (!IERC20(sonikObj.tokenAddress).transfer(msg.sender, _amount)) {
+        if (!IERC20(tokenAddress).transfer(msg.sender, _amount)) {
             revert Errors.TransferFailed();
         }
 
@@ -205,20 +224,11 @@ contract SonikDrop {
     // @dev updates the merkle state
     function updateMerkleRoot(bytes32 _newMerkleRoot) external {
         onlyOwner();
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-        bytes32 _oldMerkleRoot = sonikObj.merkleRoot;
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
-
-        stateSonikObj.merkleRoot = _newMerkleRoot;
+        bytes32 _oldMerkleRoot = merkleRoot;
+        merkleRoot = _newMerkleRoot;
 
         emit Events.MerkleRootUpdated(_oldMerkleRoot, _newMerkleRoot);
-    }
-
-    // @user get current merkle proof
-    function getMerkleRoot() external view returns (bytes32) {
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-        return sonikObj.merkleRoot;
     }
 
     // @user For owner to withdraw left over tokens
@@ -230,15 +240,14 @@ contract SonikDrop {
         onlyOwner();
         uint256 contractBalance = getContractBalance();
         zeroValueCheck(contractBalance);
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
 
-        if (sonikObj.isTimeLocked) {
+        if (isTimeLocked) {
             if (!hasAidropTimeEnded()) {
                 revert Errors.AirdropClaimTimeNotEnded();
             }
         }
 
-        if (!IERC20(sonikObj.tokenAddress).transfer(sonikObj.owner, contractBalance)) {
+        if (!IERC20(tokenAddress).transfer(owner, contractBalance)) {
             revert Errors.WithdrawalFailed();
         }
 
@@ -249,8 +258,7 @@ contract SonikDrop {
     function fundAirdrop(uint256 _amount) external {
         onlyOwner();
         zeroValueCheck(_amount);
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-        if (!IERC20(sonikObj.tokenAddress).transferFrom(msg.sender, address(this), _amount)) {
+        if (!IERC20(tokenAddress).transferFrom(msg.sender, address(this), _amount)) {
             revert Errors.TransferFailed();
         }
         emit Events.AirdropTokenDeposited(msg.sender, _amount);
@@ -259,51 +267,39 @@ contract SonikDrop {
     function updateNftRequirement(address _newNft) external {
         sanityCheck(_newNft);
         onlyOwner();
-        LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-        if (_newNft == sonikObj.nftAddress) {
+
+        if (_newNft == nftAddress) {
             revert Errors.CannotSetAddressTwice();
         }
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
-
-        stateSonikObj.isNftRequired = true;
+        isNftRequired = true;
 
         emit Events.NftRequirementUpdated(msg.sender, block.timestamp, _newNft);
     }
 
     function turnOffNftRequirement() external {
         onlyOwner();
-        // LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
-
-        stateSonikObj.isNftRequired = false;
-        stateSonikObj.nftAddress = address(0);
+        isNftRequired = false;
+        nftAddress = address(0);
 
         emit Events.NftRequirementOff(msg.sender, block.timestamp);
     }
 
     function updateClaimTime(uint256 _claimTime) external {
         onlyOwner();
-        // LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
 
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
+        isTimeLocked = _claimTime != 0;
+        airdropEndTime = block.timestamp + _claimTime;
 
-        stateSonikObj.isTimeLocked = _claimTime != 0;
-        stateSonikObj.airdropEndTime = block.timestamp + _claimTime;
-
-        emit Events.ClaimTimeUpdated(msg.sender, _claimTime, stateSonikObj.airdropEndTime);
+        emit Events.ClaimTimeUpdated(msg.sender, _claimTime, airdropEndTime);
     }
 
     function updateClaimersNumber(uint256 _noOfClaimers) external {
         onlyOwner();
         zeroValueCheck(_noOfClaimers);
 
-        // LibDiamond.SonikDropObj memory sonikObj = readSonikObj();
-
-        LibDiamond.SonikDropObj storage stateSonikObj = getWritableSonikObj();
-
-        stateSonikObj.totalNoOfClaimers = _noOfClaimers;
+        totalNoOfClaimers = _noOfClaimers;
 
         emit Events.ClaimersNumberUpdated(msg.sender, block.timestamp, _noOfClaimers);
     }
