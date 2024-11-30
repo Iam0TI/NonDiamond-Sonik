@@ -86,8 +86,7 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
         assertEq(shibuyaToken.balanceOf(owner), 100000e18);
 
         //interact with factory
-        address[] memory addresses = AirdropFactoryFacet(address(diamond))
-            .getAllSonikDropClones();
+        address[] memory addresses = AirdropFactoryFacet(address(diamond)).getAllSonikDropClones();
         assertEq(addresses.length, 0);
 
         // create sonik token drop without NFT
@@ -98,42 +97,29 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
 
         // should revert without tokenApproval
         vm.expectRevert();
-        AirdropFactoryFacet(
-            address(diamond)
-        ).createSonikDrop(
-                _tokenAddress,
-                _merkleRoot,
-                _noOfClaimers,
-                _totalOutputTokens
-            );
-        
+        AirdropFactoryFacet(address(diamond)).createSonikDrop(
+            _tokenAddress, _merkleRoot, _noOfClaimers, _totalOutputTokens
+        );
+
         // approve token
         vm.startPrank(owner);
         shibuyaToken.approve(address(diamond), 50000e18);
 
-        assertEq(shibuyaToken.allowance(owner, address(diamond)),50000e18);
+        assertEq(shibuyaToken.allowance(owner, address(diamond)), 50000e18);
 
         // create sonik contract
-         LibDiamond.SonikDropObj memory sonikDropObj = AirdropFactoryFacet(
-            address(diamond)
-        ).createSonikDrop(
-                _tokenAddress,
-                _merkleRoot,
-                _noOfClaimers,
-                _totalOutputTokens
-            );
-        assertEq(sonikDropObj.nftAddress, address(0) );
+        LibDiamond.SonikDropObj memory sonikDropObj = AirdropFactoryFacet(address(diamond)).createSonikDrop(
+            _tokenAddress, _merkleRoot, _noOfClaimers, _totalOutputTokens
+        );
+        assertEq(sonikDropObj.nftAddress, address(0));
         assertEq(sonikDropObj.tokenAddress, _tokenAddress);
         assertEq(sonikDropObj.owner, owner);
         assertEq(sonikDropObj.merkleRoot, _merkleRoot);
 
         // test claiming
-        assertEq(shibuyaToken.balanceOf(sonikDropObj.contractAddress),_totalOutputTokens);
+        assertEq(shibuyaToken.balanceOf(sonikDropObj.contractAddress), _totalOutputTokens);
 
         // should we make the sonikFacet depend on diamond or have it's own storage
-
-        
-
     }
 
     function testCreateSonikDrop() public {
@@ -141,9 +127,5 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
         // factoryF.createSonikDrop();
     }
 
-    function diamondCut(
-        FacetCut[] calldata _diamondCut,
-        address _init,
-        bytes calldata _calldata
-    ) external override {}
+    function diamondCut(FacetCut[] calldata _diamondCut, address _init, bytes calldata _calldata) external override {}
 }
