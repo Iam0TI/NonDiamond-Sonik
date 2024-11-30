@@ -12,8 +12,7 @@ function generateProof(address) {
       // Generate the proof for the given index
       const proof = tree.getProof(i);
       return {
-        //  value: v,
-        proof: proof,
+         proof,
       };
     }
   }

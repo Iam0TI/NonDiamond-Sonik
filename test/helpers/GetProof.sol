@@ -42,7 +42,7 @@ abstract contract GetProof is Test {
         cmd[2] = toString(_userAddress);
 
         // Call the script and get the response
-        bytes memory res = vm.ffi(cmd); 
+        bytes memory res = vm.ffi(cmd);
         string memory st = string(res);
 
         string memory root = vm.projectRoot();

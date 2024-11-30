@@ -23,7 +23,7 @@ async function main() {
     const outputPath = path.join(__dirname, `proof.json`);
 
     // Write the JSON object to a file
-    await fs.writeFile(outputPath, JSON.stringify(output, null, 2));
+    await fs.writeFile(outputPath, JSON.stringify(output, null, 1));
     console.log(output)
     console.log(`Proof saved to ${outputPath}`);
   } catch (error) {

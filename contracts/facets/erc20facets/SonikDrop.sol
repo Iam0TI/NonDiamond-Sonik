@@ -1,7 +1,8 @@
-// SPDX-License-Identifier= MIT
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
 import {MerkleProof} from "../../libraries/MerkleProof.sol";
+
 import {IERC20} from "../../interfaces/IERC20.sol";
 import {IERC721} from "../../interfaces/IERC721.sol";
 import {Errors, Events} from "../../libraries/Utils.sol";
@@ -94,13 +95,14 @@ contract SonikDrop {
         }
 
         // @dev we hash the encoded byte form of the user address and amount to create a leaf
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, _amount));
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender, _amount))));
 
         // @dev check if the merkleProof provided is valid or belongs to the merkleRoot
         return MerkleProof.verify(_merkleProof, merkleRoot, leaf);
     }
 
     // verify user signature
+
     function _verifySignature(bytes32 digest, bytes memory signature) private view returns (bool) {
         return ECDSA.recover(digest, signature) == msg.sender;
     }
@@ -137,7 +139,19 @@ contract SonikDrop {
             revert Errors.AirdropClaimEnded();
         }
 
+        uint256 _currentNoOfClaims = totalNoOfClaimed;
+
+        if (_currentNoOfClaims + 1 > totalNoOfClaimers) {
+            revert Errors.TotalClaimersExceeded();
+        }
+        if (getContractBalance() < _amount) {
+            revert Errors.InsufficientContractBalance();
+        }
+
+        totalNoOfClaimed += 1;
+
         hasUserClaimedAirdrop[msg.sender] = true;
+
         totalAmountSpent += _amount;
 
         if (!IERC20(tokenAddress).transfer(msg.sender, _amount)) {

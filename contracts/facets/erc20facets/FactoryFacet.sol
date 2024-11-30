@@ -18,7 +18,7 @@ contract AirdropFactoryFacet {
         uint256 _claimTime,
         uint256 _noOfClaimers,
         uint256 _totalOutputTokens
-    ) private returns (address ) {
+    ) private returns (address) {
         if (msg.sender == address(0)) {
             revert Errors.ZeroAddressDetected();
         }
@@ -32,12 +32,14 @@ contract AirdropFactoryFacet {
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
-        SonikDrop _newSonik = new SonikDrop(msg.sender , _tokenAddress,_merkleRoot,_nftAddress ,_claimTime,_noOfClaimers);
+        SonikDrop _newSonik =
+            new SonikDrop(msg.sender, _tokenAddress, _merkleRoot, _nftAddress, _claimTime, _noOfClaimers);
 
-        IERC20(_tokenAddress).transferFrom(msg.sender, address(_newSonik), _totalOutputTokens);
-        
+        bool success = IERC20(_tokenAddress).transferFrom(msg.sender, address(_newSonik), _totalOutputTokens);
+        require(success, Errors.TransferFailed());
+
         ds.ownerToSonikDropCloneContracts[msg.sender].push(address(_newSonik));
-       
+
         ds.allSonikDropClones.push(address(_newSonik));
         ++ds.cloneCount;
 
@@ -79,7 +81,6 @@ contract AirdropFactoryFacet {
     function getOwnerSonikDropClones(address _owner) external view returns (address[] memory) {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         return ds.ownerToSonikDropCloneContracts[_owner];
-        
     }
 
     function getAllSonikDropClones() external view returns (address[] memory) {

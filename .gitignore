@@ -5,3 +5,4 @@ cache
 
 .env
 .vscode
+package-lock.json
