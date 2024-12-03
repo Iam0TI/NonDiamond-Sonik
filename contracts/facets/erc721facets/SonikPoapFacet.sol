@@ -6,21 +6,54 @@ import {MerkleProof} from "../../libraries/MerkleProof.sol";
 import {Errors, Events, IERC721Errors, ERC721Utils} from "../../libraries/Utils.sol";
 import {LibDiamond} from "../../libraries/LibDiamond.sol";
 import {ECDSA} from "../../libraries/ECDSA.sol";
-import {ERC721Facet} from "./ERC721Facet.sol";
 
-contract SonikPoapFacet is ERC721Facet {
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+
+contract SonikPoapFacet is ERC721URIStorage {
+    /*====================    Variable  ====================*/
+    bytes32 merkleRoot;
+    mapping(address => bool) hasUserClaimedAirdrop;
+    bool isNftRequired;
+    bool isTimeLocked;
+    bool isTokenInitialized;
+    address nftAddress;
+    address contractAddress;
+    address owner;
+    uint256 claimTime;
+    uint256 airdropEndTime;
+    uint256 totalAmountSpent;
+    uint256 totalNoOfClaimers;
+    uint256 totalNoOfClaimed;
+    uint256 index;
+
+    constructor(string _name, string _symbol) ERC721(_name, _symbol) {
+        owner = msg.sender;
+    }
+
+    function sanityCheck(address _user) internal pure {
+        if (_user == address(0)) {
+            revert Errors.ZeroAddressDetected();
+        }
+    }
+
+    // @dev prevents users from accessing onlyOwner privileges
+    function onlyOwner() internal view {
+        sanityCheck(msg.sender);
+
+        if (msg.sender != owner) {
+            revert Errors.UnAuthorizedFunctionCall();
+        }
+    }
     /*====================  VIew FUnctions ====================*/
 
     // @dev returns if airdropTime has ended or not
     function hasAidropTimeEnded() public view returns (bool) {
-        LibDiamond.SonikPoapObj storage sonikPoapObj = getWritableSonikObj();
-        return block.timestamp > sonikPoapObj.airdropEndTime;
+        return block.timestamp > airdropEndTime;
     }
 
     // @user get current merkle proof
     function getMerkleRoot() external view returns (bytes32) {
-        LibDiamond.SonikPoapObj storage sonikPoapObj = getWritableSonikObj();
-        return sonikPoapObj.merkleRoot;
+        return merkleRoot;
     }
 
     function checkEligibility(bytes32[] calldata _merkleProof) public view returns (bool) {
@@ -32,18 +65,17 @@ contract SonikPoapFacet is ERC721Facet {
         // @dev we hash the encoded byte form of the user address and amount to create a leaf
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
 
-        LibDiamond.SonikPoapObj storage sonikPoapObj = getWritableSonikObj();
         // @dev check if the merkleProof provided is valid or belongs to the merkleRoot
-        return MerkleProof.verify(_merkleProof, sonikPoapObj.merkleRoot, leaf);
+        return MerkleProof.verify(_merkleProof, merkleRoot, leaf);
     }
     // require msg.sender to sign a message before claiming
     // @user for claiming airdrop
 
     function claimAirdrop(bytes32[] calldata _merkleProof, bytes32 digest, bytes memory signature) external {
         sanityCheck(msg.sender);
-        LibDiamond.SonikPoapObj storage sonikPoapObj = getWritableSonikObj();
-        // check if NFT is required
-        if (sonikPoapObj.isNftRequired) {
+
+        // check if NFT is requiredss
+        if (isNftRequired) {
             claimAirdrop(_merkleProof, type(uint256).max, digest, signature);
             return;
         }
@@ -63,21 +95,21 @@ contract SonikPoapFacet is ERC721Facet {
             revert Errors.InvalidClaim();
         }
 
-        if (sonikPoapObj.isTimeLocked && hasAidropTimeEnded()) {
+        if (isTimeLocked && hasAidropTimeEnded()) {
             revert Errors.AirdropClaimEnded();
         }
 
-        uint256 _currentNoOfClaims = sonikPoapObj.totalNoOfClaimed;
+        uint256 _currentNoOfClaims = totalNoOfClaimed;
 
-        if (_currentNoOfClaims + 1 > sonikPoapObj.totalNoOfClaimers) {
+        if (_currentNoOfClaims + 1 > totalNoOfClaimers) {
             revert Errors.TotalClaimersExceeded();
         }
 
-        sonikPoapObj.totalNoOfClaimed += 1;
+        totalNoOfClaimed += 1;
 
-        uint256 tokenId = sonikPoapObj.index;
-        ++sonikPoapObj.index;
-        sonikPoapObj.hasUserClaimedAirdrop[msg.sender] = true;
+        uint256 tokenId = index;
+        ++index;
+        hasUserClaimedAirdrop[msg.sender] = true;
 
         _safeMint(msg.sender, tokenId);
         emit Events.AirdropClaimed(msg.sender, tokenId);
@@ -106,28 +138,26 @@ contract SonikPoapFacet is ERC721Facet {
             revert Errors.InvalidClaim();
         }
 
-        LibDiamond.SonikPoapObj storage sonikPoapObj = getWritableSonikObj();
-
-        if (sonikPoapObj.isTimeLocked && hasAidropTimeEnded()) {
+        if (isTimeLocked && hasAidropTimeEnded()) {
             revert Errors.AirdropClaimEnded();
         }
 
         // @dev checks if user has the required NFT
-        if (IERC721(sonikPoapObj.nftAddress).balanceOf(msg.sender) > 0) {
+        if (IERC721(nftAddress).balanceOf(msg.sender) > 0) {
             revert Errors.NFTNotFound();
         }
 
-        uint256 _currentNoOfClaims = sonikPoapObj.totalNoOfClaimed;
+        uint256 _currentNoOfClaims = totalNoOfClaimed;
 
-        if (_currentNoOfClaims + 1 > sonikPoapObj.totalNoOfClaimers) {
+        if (_currentNoOfClaims + 1 > totalNoOfClaimers) {
             revert Errors.TotalClaimersExceeded();
         }
 
-        sonikPoapObj.totalNoOfClaimed += 1;
+        totalNoOfClaimed += 1;
 
-        uint256 tokenId = sonikPoapObj.index;
-        ++sonikPoapObj.index;
-        sonikPoapObj.hasUserClaimedAirdrop[msg.sender] = true;
+        uint256 tokenId = index;
+        ++index;
+        hasUserClaimedAirdrop[msg.sender] = true;
 
         _safeMint(msg.sender, tokenId);
         emit Events.AirdropClaimed(msg.sender, tokenId);
@@ -136,13 +166,13 @@ contract SonikPoapFacet is ERC721Facet {
     /*====================  OWNER FUnctions ====================*/
 
     // @user for the contract owner to update the Merkle root
-    // @dev updates the merkle state
+    // @dev updates the merkle
     function updateMerkleRoot(bytes32 _newMerkleRoot) external {
         onlyOwner();
-        LibDiamond.SonikPoapObj storage sonikPoapObj = getWritableSonikObj();
-        bytes32 _oldMerkleRoot = sonikPoapObj.merkleRoot;
 
-        sonikPoapObj.merkleRoot = _newMerkleRoot;
+        bytes32 _oldMerkleRoot = merkleRoot;
+
+        merkleRoot = _newMerkleRoot;
 
         emit Events.MerkleRootUpdated(_oldMerkleRoot, _newMerkleRoot);
     }
@@ -150,14 +180,12 @@ contract SonikPoapFacet is ERC721Facet {
     function updateNftRequirement(address _newNft) external {
         sanityCheck(_newNft);
         onlyOwner();
-        LibDiamond.SonikPoapObj storage sonikPoapObj = getWritableSonikObj();
-        if (_newNft == sonikPoapObj.nftAddress) {
+
+        if (_newNft == nftAddress) {
             revert Errors.CannotSetAddressTwice();
         }
 
-        LibDiamond.SonikPoapObj storage statesonikPoapObj = getWritableSonikObj();
-
-        statesonikPoapObj.isNftRequired = true;
+        isNftRequired = true;
 
         emit Events.NftRequirementUpdated(msg.sender, block.timestamp, _newNft);
     }
@@ -166,10 +194,8 @@ contract SonikPoapFacet is ERC721Facet {
         onlyOwner();
         // LibDiamond.SonikPoapObj storage sonikPoapObj= getWritableSonikObj();
 
-        LibDiamond.SonikPoapObj storage statesonikPoapObj = getWritableSonikObj();
-
-        statesonikPoapObj.isNftRequired = false;
-        statesonikPoapObj.nftAddress = address(0);
+        isNftRequired = false;
+        nftAddress = address(0);
 
         emit Events.NftRequirementOff(msg.sender, block.timestamp);
     }
@@ -178,12 +204,10 @@ contract SonikPoapFacet is ERC721Facet {
         onlyOwner();
         // LibDiamond.SonikPoapObj storage sonikPoapObj= getWritableSonikObj();
 
-        LibDiamond.SonikPoapObj storage statesonikPoapObj = getWritableSonikObj();
+        isTimeLocked = _claimTime != 0;
+        airdropEndTime = block.timestamp + _claimTime;
 
-        statesonikPoapObj.isTimeLocked = _claimTime != 0;
-        statesonikPoapObj.airdropEndTime = block.timestamp + _claimTime;
-
-        emit Events.ClaimTimeUpdated(msg.sender, _claimTime, statesonikPoapObj.airdropEndTime);
+        emit Events.ClaimTimeUpdated(msg.sender, _claimTime, airdropEndTime);
     }
 
     function updateClaimersNumber(uint256 _noOfClaimers) external {
@@ -192,9 +216,7 @@ contract SonikPoapFacet is ERC721Facet {
 
         // LibDiamond.SonikPoapObj storage sonikPoapObj= getWritableSonikObj();
 
-        LibDiamond.SonikPoapObj storage statesonikPoapObj = getWritableSonikObj();
-
-        statesonikPoapObj.totalNoOfClaimers = _noOfClaimers;
+        totalNoOfClaimers = _noOfClaimers;
 
         emit Events.ClaimersNumberUpdated(msg.sender, block.timestamp, _noOfClaimers);
     }
@@ -209,8 +231,8 @@ contract SonikPoapFacet is ERC721Facet {
     // @dev returns if a user has claimed or not
     function _hasClaimedAirdrop(address _user) private view returns (bool) {
         sanityCheck(_user);
-        LibDiamond.SonikPoapObj storage statesonikPoapObj = getWritableSonikObj();
-        return statesonikPoapObj.hasUserClaimedAirdrop[_user];
+
+        return hasUserClaimedAirdrop[_user];
     }
 
     // verify user signature
