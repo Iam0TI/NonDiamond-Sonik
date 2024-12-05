@@ -13,12 +13,14 @@ import {ECDSA} from "../../libraries/ECDSA.sol";
 // owners cannot withdraw tokens within that time
 
 contract SonikDrop {
+    //TODO make owner, tokenAddress, and merkleRoot  immutable
     bytes32 public merkleRoot;
     address public owner;
     address public tokenAddress;
     address nftAddress; // for nft require drops
 
     //TODO why not pause function?
+
     bool isTimeLocked;
     bool isNftRequired;
     uint256 internal airdropEndTime;
@@ -66,10 +68,7 @@ contract SonikDrop {
 
     // @dev prevents users from accessing onlyOwner privileges
     function onlyOwner() private view {
-        sanityCheck(msg.sender);
-        if (msg.sender != owner) {
-            revert Errors.UnAuthorizedFunctionCall();
-        }
+        require(msg.sender != owner, Errors.UnAuthorizedFunctionCall());
     }
 
     // @dev returns if airdropTime has ended or not for time locked airdrop
@@ -82,14 +81,9 @@ contract SonikDrop {
         return IERC20(tokenAddress).balanceOf(address(this));
     }
 
-    // how do we check for eligibility of a user without requiring the amount
-    // reason= most users wont know their allocations until they check
-    // checking eligibility should then reveal their allocation
-
     // @user check for eligibility
 
     function checkEligibility(uint256 _amount, bytes32[] calldata _merkleProof) public view returns (bool) {
-        sanityCheck(msg.sender);
         if (hasUserClaimedAirdrop[msg.sender]) {
             return false;
         }
@@ -112,53 +106,12 @@ contract SonikDrop {
     function claimAirdrop(uint256 _amount, bytes32[] calldata _merkleProof, bytes32 digest, bytes memory signature)
         external
     {
-        sanityCheck(msg.sender);
-
         // check if NFT is required
         if (isNftRequired) {
             claimAirdrop(_amount, _merkleProof, type(uint256).max, digest, signature);
             return;
         }
-
-        // verify user signature
-        if (!_verifySignature(digest, signature)) {
-            revert Errors.InvalidSignature();
-        }
-
-        // check if User has claimed before
-        if (hasUserClaimedAirdrop[msg.sender]) {
-            revert Errors.HasClaimedRewardsAlready();
-        }
-
-        //    checks if User is eligible
-        if (!checkEligibility(_amount, _merkleProof)) {
-            revert Errors.InvalidClaim();
-        }
-
-        if (isTimeLocked && hasAidropTimeEnded()) {
-            revert Errors.AirdropClaimEnded();
-        }
-
-        uint256 _currentNoOfClaims = totalNoOfClaimed;
-
-        if (_currentNoOfClaims + 1 > totalNoOfClaimers) {
-            revert Errors.TotalClaimersExceeded();
-        }
-        if (getContractBalance() < _amount) {
-            revert Errors.InsufficientContractBalance();
-        }
-
-        totalNoOfClaimed += 1;
-
-        hasUserClaimedAirdrop[msg.sender] = true;
-
-        totalAmountSpent += _amount;
-
-        if (!IERC20(tokenAddress).transfer(msg.sender, _amount)) {
-            revert Errors.TransferFailed();
-        }
-
-        emit Events.AirdropClaimed(msg.sender, _amount);
+        _claimAirdrop(_amount, _merkleProof, digest, signature);
     }
 
     // @user for claiming airdrop with compulsory NFT ownership
@@ -169,59 +122,46 @@ contract SonikDrop {
         bytes32 digest,
         bytes memory signature
     ) public {
-        sanityCheck(msg.sender);
-
-        if (_tokenId == type(uint256).max) {
-            revert Errors.InvalidTokenId();
-        }
-        if (hasUserClaimedAirdrop[msg.sender]) {
-            revert Errors.HasClaimedRewardsAlready();
-        }
-
-        // verify user signature
-        if (!_verifySignature(digest, signature)) {
-            revert Errors.InvalidSignature();
-        }
-
-        //    checks if User is eligible
-        if (!checkEligibility(_amount, _merkleProof)) {
-            revert Errors.InvalidClaim();
-        }
-
-        if (isTimeLocked && hasAidropTimeEnded()) {
-            revert Errors.AirdropClaimEnded();
-        }
+        require(_tokenId == type(uint256).max, Errors.InvalidTokenId());
 
         // @dev checks if user has the required NFT
-        if (IERC721(nftAddress).balanceOf(msg.sender) > 0) {
-            revert Errors.NFTNotFound();
-        }
+        require(IERC721(nftAddress).balanceOf(msg.sender) > 0, Errors.NFTNotFound());
+
+        _claimAirdrop(_amount, _merkleProof, digest, signature);
+    }
+
+    function _claimAirdrop(uint256 _amount, bytes32[] calldata _merkleProof, bytes32 digest, bytes memory signature)
+        internal
+    {
+        // verify user signature
+        require(_verifySignature(digest, signature), "Invalid signature");
+
+        // checks if User is eligible
+        require(checkEligibility(_amount, _merkleProof), "Invalid claim");
+
+        require(!isTimeLocked || !hasAidropTimeEnded(), "Airdrop claim ended");
 
         uint256 _currentNoOfClaims = totalNoOfClaimed;
 
-        if (_currentNoOfClaims + 1 > totalNoOfClaimers) {
-            revert Errors.TotalClaimersExceeded();
-        }
+        require(_currentNoOfClaims + 1 <= totalNoOfClaimers, "Total claimers exceeded");
+        require(getContractBalance() >= _amount, "Insufficient contract balance");
 
-        if (getContractBalance() < _amount) {
-            revert Errors.InsufficientContractBalance();
+        unchecked {
+            ++totalNoOfClaimed;
         }
-
-        totalNoOfClaimed += 1;
 
         hasUserClaimedAirdrop[msg.sender] = true;
 
-        totalAmountSpent += _amount;
+        totalAmountSpent = totalAmountSpent + _amount;
 
-        if (!IERC20(tokenAddress).transfer(msg.sender, _amount)) {
-            revert Errors.TransferFailed();
-        }
+        require(IERC20(tokenAddress).transfer(msg.sender, _amount), "Transfer failed");
 
         emit Events.AirdropClaimed(msg.sender, _amount);
     }
 
     // @user for the contract owner to update the Merkle root
     // @dev updates the merkle state
+
     function updateMerkleRoot(bytes32 _newMerkleRoot) external {
         onlyOwner();
 
@@ -241,6 +181,7 @@ contract SonikDrop {
         uint256 contractBalance = getContractBalance();
         zeroValueCheck(contractBalance);
 
+        // TODO owner can manipulate time lock
         if (isTimeLocked) {
             if (!hasAidropTimeEnded()) {
                 revert Errors.AirdropClaimTimeNotEnded();
@@ -264,28 +205,28 @@ contract SonikDrop {
         emit Events.AirdropTokenDeposited(msg.sender, _amount);
     }
 
-    function updateNftRequirement(address _newNft) external {
-        sanityCheck(_newNft);
-        onlyOwner();
+    // function updateNftRequirement(address _newNft) external {
+    //     sanityCheck(_newNft);
+    //     onlyOwner();
 
-        if (_newNft == nftAddress) {
-            revert Errors.CannotSetAddressTwice();
-        }
+    //     if (_newNft == nftAddress) {
+    //         revert Errors.CannotSetAddressTwice();
+    //     }
 
-        isNftRequired = true;
+    //     isNftRequired = true;
 
-        emit Events.NftRequirementUpdated(msg.sender, block.timestamp, _newNft);
-    }
+    //     emit Events.NftRequirementUpdated(msg.sender, block.timestamp, _newNft);
+    // }
 
     function turnOffNftRequirement() external {
         onlyOwner();
 
-        isNftRequired = false;
-        nftAddress = address(0);
+        isNftRequired = !isNftRequired;
 
-        emit Events.NftRequirementOff(msg.sender, block.timestamp);
+        emit Events.NftRequirementToggled(msg.sender, block.timestamp);
     }
 
+    // why ?
     function updateClaimTime(uint256 _claimTime) external {
         onlyOwner();
 

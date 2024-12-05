@@ -13,7 +13,7 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 //TODO: how will we handle metadata?
 contract SonikPoapFacet is ERC721URIStorage {
     /*====================    Variable  ====================*/
-    bytes32 internal merkleRoot;
+    bytes32 public merkleRoot;
     bool internal isNftRequired;
     bool internal isTimeLocked;
 
@@ -58,10 +58,8 @@ contract SonikPoapFacet is ERC721URIStorage {
         }
     }
 
-    // @dev prevents users from accessing onlyOwner privileges
+    // @dev prevents users from accessing onlyOwner priv ileges
     function onlyOwner() internal view {
-        sanityCheck(msg.sender);
-
         if (msg.sender != owner) {
             revert Errors.UnAuthorizedFunctionCall();
         }
@@ -71,11 +69,6 @@ contract SonikPoapFacet is ERC721URIStorage {
     // @dev returns if airdropTime has ended or not
     function hasAidropTimeEnded() public view returns (bool) {
         return block.timestamp > airdropEndTime;
-    }
-
-    // @user get current merkle proof
-    function getMerkleRoot() external view returns (bytes32) {
-        return merkleRoot;
     }
 
     function checkEligibility(bytes32[] calldata _merkleProof) public view returns (bool) {
@@ -94,91 +87,44 @@ contract SonikPoapFacet is ERC721URIStorage {
     // @user for claiming airdrop
 
     function claimAirdrop(bytes32[] calldata _merkleProof, bytes32 digest, bytes memory signature) external {
-        sanityCheck(msg.sender);
-
         // check if NFT is requiredss
         if (isNftRequired) {
             claimAirdrop(_merkleProof, type(uint256).max, digest, signature);
             return;
         }
-
-        // verify user signature
-        if (!_verifySignature(digest, signature)) {
-            revert Errors.InvalidSignature();
-        }
-
-        // check if User has claimed before
-        if (_hasClaimedAirdrop(msg.sender)) {
-            revert Errors.HasClaimedRewardsAlready();
-        }
-
-        //    checks if User is eligible
-        if (!checkEligibility(_merkleProof)) {
-            revert Errors.InvalidClaim();
-        }
-
-        if (isTimeLocked && hasAidropTimeEnded()) {
-            revert Errors.AirdropClaimEnded();
-        }
-
-        uint256 _currentNoOfClaims = totalNoOfClaimed;
-
-        if (_currentNoOfClaims + 1 > totalNoOfClaimers) {
-            revert Errors.TotalClaimersExceeded();
-        }
-
-        totalNoOfClaimed += 1;
-
-        uint256 tokenId = index;
-        ++index;
-        hasUserClaimedAirdrop[msg.sender] = true;
-
-        _safeMint(msg.sender, tokenId);
-        emit Events.AirdropClaimed(msg.sender, tokenId);
+        _claimAirdrop(_merkleProof, digest, signature);
     }
 
     // @user for claiming airdrop with compulsory NFT ownership
     function claimAirdrop(bytes32[] calldata _merkleProof, uint256 _tokenId, bytes32 digest, bytes memory signature)
         public
     {
-        sanityCheck(msg.sender);
-
-        if (_tokenId == type(uint256).max) {
-            revert Errors.InvalidTokenId();
-        }
-        if (_hasClaimedAirdrop(msg.sender)) {
-            revert Errors.HasClaimedRewardsAlready();
-        }
-
-        // verify user signature
-        if (!_verifySignature(digest, signature)) {
-            revert Errors.InvalidSignature();
-        }
-
-        //    checks if User is eligible
-        if (!checkEligibility(_merkleProof)) {
-            revert Errors.InvalidClaim();
-        }
-
-        if (isTimeLocked && hasAidropTimeEnded()) {
-            revert Errors.AirdropClaimEnded();
-        }
+        require(_tokenId != type(uint256).max, Errors.InvalidTokenId());
 
         // @dev checks if user has the required NFT
-        if (IERC721(nftAddress).balanceOf(msg.sender) > 0) {
-            revert Errors.NFTNotFound();
-        }
+        require(IERC721(nftAddress).balanceOf(msg.sender) > 0, Errors.NFTNotFound());
+
+        _claimAirdrop(_merkleProof, digest, signature);
+    }
+
+    function _claimAirdrop(bytes32[] calldata _merkleProof, bytes32 digest, bytes memory signature) internal {
+        // verify user signature
+        require(_verifySignature(digest, signature), Errors.InvalidSignature());
+
+        //    checks if User is eligible
+        require(checkEligibility(_merkleProof), Errors.InvalidClaim());
+
+        require(!isTimeLocked || !hasAidropTimeEnded(), Errors.AirdropClaimEnded());
 
         uint256 _currentNoOfClaims = totalNoOfClaimed;
 
-        if (_currentNoOfClaims + 1 > totalNoOfClaimers) {
-            revert Errors.TotalClaimersExceeded();
-        }
-
-        totalNoOfClaimed += 1;
-
+        require(_currentNoOfClaims + 1 <= totalNoOfClaimers, Errors.TotalClaimersExceeded());
         uint256 tokenId = index;
-        ++index;
+
+        unchecked {
+            ++totalNoOfClaimed;
+            ++index;
+        }
         hasUserClaimedAirdrop[msg.sender] = true;
 
         _safeMint(msg.sender, tokenId);
@@ -212,19 +158,16 @@ contract SonikPoapFacet is ERC721URIStorage {
         emit Events.NftRequirementUpdated(msg.sender, block.timestamp, _newNft);
     }
 
-    function turnOffNftRequirement() external {
+    function toggleNftRequirement() external {
         onlyOwner();
-        // LibDiamond.SonikPoapObj storage sonikPoapObj= getWritableSonikObj();
 
-        isNftRequired = false;
-        nftAddress = address(0);
+        isNftRequired = !isNftRequired;
 
-        emit Events.NftRequirementOff(msg.sender, block.timestamp);
+        emit Events.NftRequirementToggled(msg.sender, block.timestamp);
     }
 
     function updateClaimTime(uint256 _claimTime) external {
         onlyOwner();
-        // LibDiamond.SonikPoapObj storage sonikPoapObj= getWritableSonikObj();
 
         isTimeLocked = _claimTime != 0;
         airdropEndTime = block.timestamp + _claimTime;
@@ -235,8 +178,6 @@ contract SonikPoapFacet is ERC721URIStorage {
     function updateClaimersNumber(uint256 _noOfClaimers) external {
         onlyOwner();
         zeroValueCheck(_noOfClaimers);
-
-        // LibDiamond.SonikPoapObj storage sonikPoapObj= getWritableSonikObj();
 
         totalNoOfClaimers = _noOfClaimers;
 
