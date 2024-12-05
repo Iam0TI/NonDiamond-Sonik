@@ -2,7 +2,6 @@
 pragma solidity 0.8.27;
 
 import {MerkleProof} from "../../libraries/MerkleProof.sol";
-
 import {IERC20} from "../../interfaces/IERC20.sol";
 import {IERC721} from "../../interfaces/IERC721.sol";
 import {Errors, Events} from "../../libraries/Utils.sol";
@@ -18,15 +17,16 @@ contract SonikDrop {
     address public owner;
     address public tokenAddress;
     address nftAddress; // for nft require drops
+
+    //TODO why not pause function?
+    bool isTimeLocked;
+    bool isNftRequired;
     uint256 internal airdropEndTime;
     uint256 internal claimTime;
     uint256 internal totalNoOfClaimers;
     uint256 internal totalNoOfClaimed;
 
     uint256 internal totalAmountSpent; // total for airdrop token spent
-
-    bool isTimeLocked;
-    bool isNftRequired;
 
     mapping(address user => bool claimed) public hasUserClaimedAirdrop;
 

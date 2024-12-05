@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity 0.8.27;
 
 import {IERC721} from "../../interfaces/IERC721.sol";
 import {MerkleProof} from "../../libraries/MerkleProof.sol";
@@ -8,26 +8,48 @@ import {LibDiamond} from "../../libraries/LibDiamond.sol";
 import {ECDSA} from "../../libraries/ECDSA.sol";
 
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
+//TODO: how will we handle metadata?
 contract SonikPoapFacet is ERC721URIStorage {
     /*====================    Variable  ====================*/
-    bytes32 merkleRoot;
-    mapping(address => bool) hasUserClaimedAirdrop;
-    bool isNftRequired;
-    bool isTimeLocked;
-    bool isTokenInitialized;
-    address nftAddress;
-    address contractAddress;
-    address owner;
+    bytes32 internal merkleRoot;
+    bool internal isNftRequired;
+    bool internal isTimeLocked;
+
+    address internal nftAddress;
+    address internal contractAddress;
+    address internal owner;
     uint256 claimTime;
     uint256 airdropEndTime;
-    uint256 totalAmountSpent;
+
     uint256 totalNoOfClaimers;
     uint256 totalNoOfClaimed;
     uint256 index;
 
-    constructor(string _name, string _symbol) ERC721(_name, _symbol) {
-        owner = msg.sender;
+    mapping(address => bool) hasUserClaimedAirdrop;
+
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        address _owner,
+        bytes32 _merkleRoot,
+        address _nftAddress,
+        uint256 _claimTime,
+        uint256 _noOfClaimers
+    ) ERC721(_name, _symbol) {
+        owner = _owner;
+        merkleRoot = _merkleRoot;
+        owner = _owner;
+
+        nftAddress = _nftAddress;
+        isNftRequired = _nftAddress != address(0);
+
+        claimTime = _claimTime;
+        totalNoOfClaimers = _noOfClaimers;
+
+        isTimeLocked = _claimTime != 0;
+        airdropEndTime = block.timestamp + _claimTime;
     }
 
     function sanityCheck(address _user) internal pure {

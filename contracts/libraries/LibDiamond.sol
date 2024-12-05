@@ -101,11 +101,11 @@ library LibDiamond {
         mapping(address => address[]) ownerToSonikDropCloneContracts;
         mapping(address => SonikDropObj) sonikContractToObj;
         address[] allSonikDropClones;
-        // maps user address => sonik contract address => bool
-        // hasUserClaimedAirdrop[user][sonikCloneContract] -> bool
+        // // maps user address => sonik contract address => bool
+        // // hasUserClaimedAirdrop[user][sonikCloneContract] -> bool
 
-        //TODO why not in the sonik obj
-        mapping(address => mapping(address => bool)) hasUserClaimedAirdrop;
+        // //TODO why not in the sonik obj
+        // mapping(address => mapping(address => bool)) hasUserClaimedAirdrop;
         /*==================== Sonik POAP Airdrop Storage ====================*/
         uint256 clonePoapCount;
         mapping(address => address[]) ownerToSonikPoapCloneContracts;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity 0.8.27;
 
 import {LibDiamond} from "../../libraries/LibDiamond.sol";
 import {SonikPoapFacet} from "./SonikPoapFacet.sol";
@@ -24,7 +24,8 @@ contract PoapFactoryFacet {
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
-        SonikPoapFacet _newSonikPoap = new SonikPoapFacet();
+        SonikPoapFacet _newSonikPoap =
+            new SonikPoapFacet(_name, _symbol, msg.sender, _merkleRoot, _nftAddress, _claimTime, _noOfClaimers);
 
         uint256 _id = ds.clonePoapCount;
 
