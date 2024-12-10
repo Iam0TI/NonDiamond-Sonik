@@ -32,7 +32,7 @@ contract SonikDropTest is GetProof {
         owner = address(this);
         testToken = new TestERC20();
         sonikDrop = new SonikDrop(owner, address(testToken), merkleRoot, address(0), 0, 10);
-        testToken.transfer(address(sonikDrop), 20 ether);
+        testToken.transfer(address(sonikDrop), 25 ether);
         (user1, keyUser1) = makeAddrAndKey("user1");
         (user2, keyUser2) = makeAddrAndKey("user2");
         (badUser, keybadUser) = makeAddrAndKey("badUser");
@@ -59,7 +59,7 @@ contract SonikDropTest is GetProof {
         sonikDrop.claimAirdrop(10e18, proof, hash, signature);
 
         // Attempt to claim again
-        vm.expectRevert(abi.encodeWithSignature("HasClaimedRewardsAlready()"));
+        vm.expectRevert(abi.encodeWithSignature("InvalidClaim()"));
         vm.prank(user1);
         sonikDrop.claimAirdrop(10e18, proof, hash, signature);
     }
@@ -89,6 +89,7 @@ contract SonikDropTest is GetProof {
 
     function test_ClaimAirdrop_TimeLock() external {
         // Set a claim time to test time-lock functionality
+        vm.prank(owner);
         sonikDrop.updateClaimTime(10);
 
         bytes32[] memory proof = getProof(user2);
@@ -96,8 +97,7 @@ contract SonikDropTest is GetProof {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         // Fast forward time to simulate claim after time-lock
-        vm.warp(block.timestamp + 1232); // Move time forward by 11 seconds
-
+        vm.warp(block.timestamp + 1232);
         vm.prank(user2);
         vm.expectRevert(abi.encodeWithSignature("AirdropClaimEnded()"));
         sonikDrop.claimAirdrop(20e18, proof, hash, signature);

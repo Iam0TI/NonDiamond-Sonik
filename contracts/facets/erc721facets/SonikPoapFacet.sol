@@ -6,13 +6,15 @@ import {MerkleProof} from "../../libraries/MerkleProof.sol";
 import {Errors, Events, IERC721Errors, ERC721Utils} from "../../libraries/Utils.sol";
 import {LibDiamond} from "../../libraries/LibDiamond.sol";
 import {ECDSA} from "../../libraries/ECDSA.sol";
+import {Strings} from "../../libraries/utils/Strings.sol";
 
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-//TODO: how will we handle metadata?
 contract SonikPoapFacet is ERC721URIStorage {
+    using Strings for uint256;
     /*====================    Variable  ====================*/
+
     bytes32 public merkleRoot;
     bool internal isNftRequired;
     bool internal isTimeLocked;
@@ -26,12 +28,14 @@ contract SonikPoapFacet is ERC721URIStorage {
     uint256 totalNoOfClaimers;
     uint256 totalNoOfClaimed;
     uint256 index;
+    string internal baseURI;
 
     mapping(address => bool) hasUserClaimedAirdrop;
 
     constructor(
         string memory _name,
         string memory _symbol,
+        string memory _baseURI,
         address _owner,
         bytes32 _merkleRoot,
         address _nftAddress,
@@ -40,6 +44,7 @@ contract SonikPoapFacet is ERC721URIStorage {
     ) ERC721(_name, _symbol) {
         owner = _owner;
         merkleRoot = _merkleRoot;
+        baseURI = _baseURI;
         owner = _owner;
 
         nftAddress = _nftAddress;
@@ -201,5 +206,16 @@ contract SonikPoapFacet is ERC721URIStorage {
     // verify user signature
     function _verifySignature(bytes32 digest, bytes memory signature) private view returns (bool) {
         return ECDSA.recover(digest, signature) == msg.sender;
+    }
+
+    // The following functions are overrides required by Solidity.
+
+    function tokenURI(uint256 tokenId) public view override(ERC721URIStorage) returns (string memory) {
+        _requireOwned(tokenId);
+        return string(abi.encodePacked(baseURI, tokenId.toString()));
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }

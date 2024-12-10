@@ -15,8 +15,8 @@ import {ECDSA} from "../../libraries/ECDSA.sol";
 contract SonikDrop {
     //TODO make owner, tokenAddress, and merkleRoot  immutable
     bytes32 public merkleRoot;
-    address public owner;
-    address public tokenAddress;
+    address public immutable owner;
+    address public immutable tokenAddress;
     address nftAddress; // for nft require drops
 
     //TODO why not pause function?
@@ -134,17 +134,17 @@ contract SonikDrop {
         internal
     {
         // verify user signature
-        require(_verifySignature(digest, signature), "Invalid signature");
+        require(_verifySignature(digest, signature), Errors.InvalidSignature());
 
         // checks if User is eligible
-        require(checkEligibility(_amount, _merkleProof), "Invalid claim");
+        require(checkEligibility(_amount, _merkleProof), Errors.InvalidClaim());
 
-        require(!isTimeLocked || !hasAidropTimeEnded(), "Airdrop claim ended");
+        require(!isTimeLocked || !hasAidropTimeEnded(), Errors.AirdropClaimEnded());
 
         uint256 _currentNoOfClaims = totalNoOfClaimed;
 
-        require(_currentNoOfClaims + 1 <= totalNoOfClaimers, "Total claimers exceeded");
-        require(getContractBalance() >= _amount, "Insufficient contract balance");
+        require(_currentNoOfClaims + 1 <= totalNoOfClaimers, Errors.TotalClaimersExceeded());
+        require(getContractBalance() >= _amount, Errors.InsufficientContractBalance());
 
         unchecked {
             ++totalNoOfClaimed;
@@ -154,7 +154,7 @@ contract SonikDrop {
 
         totalAmountSpent = totalAmountSpent + _amount;
 
-        require(IERC20(tokenAddress).transfer(msg.sender, _amount), "Transfer failed");
+        require(IERC20(tokenAddress).transfer(msg.sender, _amount), Errors.TransferFailed());
 
         emit Events.AirdropClaimed(msg.sender, _amount);
     }
