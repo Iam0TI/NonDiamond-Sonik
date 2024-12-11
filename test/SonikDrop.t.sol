@@ -14,6 +14,7 @@ contract TestERC20 is ERC20 {
         _mint(to, amount);
     }
 }
+// TODO test for nft  requirment
 
 contract SonikDropTest is GetProof {
     SonikDrop sonikDrop;

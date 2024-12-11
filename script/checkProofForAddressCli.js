@@ -6,6 +6,8 @@ async function main() {
   try {
     // Get the address from the command-line arguments
     const address = process.argv[2];
+    const num = process.argv[3];
+    console.log(num);
 
     if (!address) {
       console.error("Error: No address provided. Usage: node script/checkProofForAddressCli.js <address>");
@@ -13,14 +15,21 @@ async function main() {
     }
 
     // Generate the proof for the provided address
-    const proof = generateProof(address);
+    const proof = generateProof(address,num);
 
     // Create the JSON object to save
     const output =  proof;
     
-
+    let outputPath;
     // Define the output file path
-    const outputPath = path.join(__dirname, `proof.json`);
+    if  (num == 1) {
+        outputPath = path.join(__dirname, `proofNFT.json`);
+    }
+     else {
+      outputPath = path.join(__dirname, `proof.json`);
+    }
+    
+   
 
     // Write the JSON object to a file
     await fs.writeFile(outputPath, JSON.stringify(output, null, 1));
