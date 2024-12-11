@@ -21,10 +21,10 @@ contract SonikDrop {
 
     //TODO why not pause function?
 
-    bool isTimeLocked;
+    bool public isTimeLocked;
     bool isNftRequired;
-    uint256 internal airdropEndTime;
-    uint256 internal claimTime;
+    uint256 public airdropEndTime;
+    uint256 claimTime;
     uint256 internal totalNoOfClaimers;
     uint256 internal totalNoOfClaimed;
 
@@ -68,11 +68,11 @@ contract SonikDrop {
 
     // @dev prevents users from accessing onlyOwner privileges
     function onlyOwner() private view {
-        require(msg.sender != owner, Errors.UnAuthorizedFunctionCall());
+        require(msg.sender == owner, Errors.UnAuthorizedFunctionCall());
     }
 
     // @dev returns if airdropTime has ended or not for time locked airdrop
-    function hasAidropTimeEnded() public view returns (bool) {
+    function hasAirdropTimeEnded() public view returns (bool) {
         return block.timestamp > airdropEndTime;
     }
 
@@ -139,7 +139,7 @@ contract SonikDrop {
         // checks if User is eligible
         require(checkEligibility(_amount, _merkleProof), Errors.InvalidClaim());
 
-        require(!isTimeLocked || !hasAidropTimeEnded(), Errors.AirdropClaimEnded());
+        require(!isTimeLocked || !hasAirdropTimeEnded(), Errors.AirdropClaimEnded());
 
         uint256 _currentNoOfClaims = totalNoOfClaimed;
 
@@ -183,7 +183,7 @@ contract SonikDrop {
 
         // TODO owner can manipulate time lock
         if (isTimeLocked) {
-            if (!hasAidropTimeEnded()) {
+            if (!hasAirdropTimeEnded()) {
                 revert Errors.AirdropClaimTimeNotEnded();
             }
         }
@@ -204,19 +204,6 @@ contract SonikDrop {
         }
         emit Events.AirdropTokenDeposited(msg.sender, _amount);
     }
-
-    // function updateNftRequirement(address _newNft) external {
-    //     sanityCheck(_newNft);
-    //     onlyOwner();
-
-    //     if (_newNft == nftAddress) {
-    //         revert Errors.CannotSetAddressTwice();
-    //     }
-
-    //     isNftRequired = true;
-
-    //     emit Events.NftRequirementUpdated(msg.sender, block.timestamp, _newNft);
-    // }
 
     function turnOffNftRequirement() external {
         onlyOwner();
