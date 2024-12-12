@@ -205,6 +205,20 @@ contract SonikDrop {
         emit Events.AirdropTokenDeposited(msg.sender, _amount);
     }
 
+    function updateNftRequirement(address _newNft) external {
+        sanityCheck(_newNft);
+        onlyOwner();
+
+        if (nftAddress == address(0)) {
+            nftAddress = _newNft;
+            isNftRequired = true;
+        } else {
+            revert Errors.CannotSetAddressTwice();
+        }
+
+        emit Events.NftRequirementUpdated(msg.sender, block.timestamp, _newNft);
+    }
+
     function turnOffNftRequirement() external {
         onlyOwner();
 

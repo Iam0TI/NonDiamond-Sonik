@@ -36,10 +36,11 @@ abstract contract GetProof is Test {
 
     function getProof(address _userAddress) internal returns (bytes32[] memory) {
         // Command to call the Node.js script with the user address as argument
-        string[] memory cmd = new string[](3);
+        string[] memory cmd = new string[](4);
         cmd[0] = "node";
         cmd[1] = "script/checkProofForAddressCli.js";
         cmd[2] = toString(_userAddress);
+        cmd[3] = "0";
 
         // Call the script and get the response
         bytes memory res = vm.ffi(cmd);
@@ -47,6 +48,34 @@ abstract contract GetProof is Test {
 
         string memory root = vm.projectRoot();
         string memory path = string.concat(root, "/script/proof.json");
+        // string memory path = ;
+        string memory json = vm.readFile(path);
+        bytes memory data = vm.parseJson(json);
+
+        Proof memory proofs = abi.decode(data, (Proof));
+
+        for (uint256 i = 0; i < proofs.proof.length; i++) {
+            bytes32 mproof = proofs.proof[i];
+
+            console2.logBytes32(mproof);
+        }
+        return proofs.proof;
+    }
+
+    function getProofPoap(address _userAddress) internal returns (bytes32[] memory) {
+        // Command to call the Node.js script with the user address as argument
+        string[] memory cmd = new string[](4);
+        cmd[0] = "node";
+        cmd[1] = "script/checkProofForAddressCli.js";
+        cmd[2] = toString(_userAddress);
+        cmd[3] = "1";
+
+        // Call the script and get the response
+        bytes memory res = vm.ffi(cmd);
+        string memory st = string(res);
+
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/script/proofNFT.json");
         // string memory path = ;
         string memory json = vm.readFile(path);
         bytes memory data = vm.parseJson(json);

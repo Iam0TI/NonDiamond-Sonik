@@ -1,11 +1,18 @@
 const { StandardMerkleTree } = require("@openzeppelin/merkle-tree");
 const fs = require("fs");
 
-function generateProof(address) {
+function generateProof(address, num) {
+  let tree;
   // Load the Merkle tree from a JSON file
-  const tree = StandardMerkleTree.load(
+  if (num == "1") {
+    tree = StandardMerkleTree.load(
+      JSON.parse(fs.readFileSync("treenft.json", "utf8"))
+    );
+  } else {
+   tree = StandardMerkleTree.load(
     JSON.parse(fs.readFileSync("tree.json", "utf8"))
   );
+}
 
   for (const [i, v] of tree.entries()) {
     if (v[0].toLowerCase() === address.toLowerCase()) {
@@ -23,5 +30,6 @@ function generateProof(address) {
         proof: "",
       };
 }
+
 
 module.exports = { generateProof };
