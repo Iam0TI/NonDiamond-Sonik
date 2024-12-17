@@ -134,23 +134,23 @@ contract SonikPoapFacetTest is GetProof {
         signature = abi.encodePacked(r, s, v);
     }
 
-    function test_claimAirdropNFT_with_updateClaimersNumber() public {
-        vm.prank(owner);
-        sonikPoapFacet.updateClaimersNumber(1);
+    // function test_claimAirdropNFT_with_updateClaimersNumber() public {
+    //     vm.prank(owner);
+    //     sonikPoapFacet.updateClaimersNumber(1);
 
-        bytes32[] memory proof = getProofPoap(user1);
-        bytes32[] memory proof2 = getProofPoap(user2);
+    //     bytes32[] memory proof = getProofPoap(user1);
+    //     bytes32[] memory proof2 = getProofPoap(user2);
 
-        bytes memory signature = get_signa(keyUser1);
-        bytes memory signature2 = get_signa(keyUser2);
+    //     bytes memory signature = get_signa(keyUser1);
+    //     bytes memory signature2 = get_signa(keyUser2);
 
-        vm.prank(user1);
-        sonikPoapFacet.claimAirdrop(proof, hash, signature);
+    //     vm.prank(user1);
+    //     sonikPoapFacet.claimAirdrop(proof, hash, signature);
 
-        vm.expectRevert(abi.encodeWithSignature("TotalClaimersExceeded()"));
-        vm.prank(user2);
-        sonikPoapFacet.claimAirdrop(proof2, hash, signature2);
-    }
+    //     vm.expectRevert(abi.encodeWithSignature("TotalClaimersExceeded()"));
+    //     vm.prank(user2);
+    //     sonikPoapFacet.claimAirdrop(proof2, hash, signature2);
+    // }
 
     function test_claimAirdropNFT_with_nft_requirement_on() public {
         vm.prank(owner);

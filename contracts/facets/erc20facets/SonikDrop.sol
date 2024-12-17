@@ -15,9 +15,10 @@ import {ECDSA} from "../../libraries/ECDSA.sol";
 // TODO add a way to check if the airdrop has ended and owner wthdraw
 contract SonikDrop {
     bytes32 public immutable merkleRoot;
+    string public immutable name;
     address public immutable owner;
     address public immutable tokenAddress;
-    address nftAddress; 
+    address nftAddress;
 
     bool public isTimeLocked;
     bool public hasOwnerWithdrawn;
@@ -35,6 +36,7 @@ contract SonikDrop {
         address _owner,
         address _tokenAddress,
         bytes32 _merkleRoot,
+        string memory _name,
         address _nftAddress,
         uint256 _claimTime,
         uint256 _noOfClaimers
@@ -44,6 +46,7 @@ contract SonikDrop {
         owner = _owner;
 
         tokenAddress = _tokenAddress;
+        name = _name;
 
         nftAddress = _nftAddress;
 
@@ -171,7 +174,6 @@ contract SonikDrop {
         uint256 contractBalance = getContractBalance();
         zeroValueCheck(contractBalance);
 
-        // TODO owner can manipulate time lock
         if (isTimeLocked) {
             if (!hasAirdropTimeEnded()) {
                 revert Errors.AirdropClaimTimeNotEnded();
