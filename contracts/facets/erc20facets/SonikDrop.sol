@@ -15,7 +15,7 @@ import {ECDSA} from "../../libraries/ECDSA.sol";
 // TODO add a way to check if the airdrop has ended and owner wthdraw
 contract SonikDrop {
     bytes32 public immutable merkleRoot;
-    string public immutable name;
+    string public name;
     address public immutable owner;
     address public immutable tokenAddress;
     address nftAddress;

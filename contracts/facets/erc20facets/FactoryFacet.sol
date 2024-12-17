@@ -52,20 +52,22 @@ contract AirdropFactoryFacet {
     function createSonikDrop(
         address _tokenAddress,
         bytes32 _merkleRoot,
+        string memory _name,
         address _nftAddress,
         uint256 _noOfClaimers,
         uint256 _totalOutputTokens
     ) external returns (address) {
-        return _createSonikDrop(_tokenAddress, _merkleRoot, _nftAddress, 0, _noOfClaimers, _totalOutputTokens);
+        return _createSonikDrop(_tokenAddress, _merkleRoot, _name, _nftAddress, 0, _noOfClaimers, _totalOutputTokens);
     }
 
     function createSonikDrop(
         address _tokenAddress,
         bytes32 _merkleRoot,
+        string memory _name,
         uint256 _noOfClaimers,
         uint256 _totalOutputTokens
     ) external returns (address) {
-        return _createSonikDrop(_tokenAddress, _merkleRoot, address(0), 0, _noOfClaimers, _totalOutputTokens);
+        return _createSonikDrop(_tokenAddress, _merkleRoot, _name, address(0), 0, _noOfClaimers, _totalOutputTokens);
     }
 
     function getOwnerSonikDropClones(address _owner) external view returns (address[] memory) {
