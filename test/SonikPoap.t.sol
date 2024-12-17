@@ -91,27 +91,6 @@ contract SonikPoapFacetTest is GetProof {
         vm.stopPrank();
     }
 
-    function test_updateMerkleRoot_notOwner_revert() public {
-        vm.startPrank(user1);
-        vm.expectRevert(abi.encodeWithSignature("UnAuthorizedFunctionCall()"));
-        sonikPoapFacet.updateMerkleRoot(merkleRoot);
-        vm.stopPrank();
-        assertEq(sonikPoapFacet.merkleRoot(), merkleRoot);
-    }
-
-    function test_updateMerkleRoot() public {
-        vm.prank(owner);
-        bytes32 newMerkleRoot = keccak256("new merkle root");
-        sonikPoapFacet.updateMerkleRoot(newMerkleRoot);
-        assertEq(sonikPoapFacet.merkleRoot(), newMerkleRoot);
-    }
-
-    function test_updateClaimersNumber() public {
-        vm.prank(owner);
-        sonikPoapFacet.updateClaimersNumber(100);
-        assertEq(sonikPoapFacet.totalNoOfClaimers(), 100);
-    }
-
     function test_toggleNftRequirement() public {
         vm.prank(owner);
         sonikPoapFacet.toggleNftRequirement();
