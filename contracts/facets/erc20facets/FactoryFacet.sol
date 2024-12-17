@@ -14,6 +14,7 @@ contract AirdropFactoryFacet {
     function _createSonikDrop(
         address _tokenAddress,
         bytes32 _merkleRoot,
+        string memory _name,
         address _nftAddress,
         uint256 _claimTime,
         uint256 _noOfClaimers,
@@ -33,7 +34,7 @@ contract AirdropFactoryFacet {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
         SonikDrop _newSonik =
-            new SonikDrop(msg.sender, _tokenAddress, _merkleRoot, _nftAddress, _claimTime, _noOfClaimers);
+            new SonikDrop(msg.sender, _tokenAddress, _merkleRoot, _name, _nftAddress, _claimTime, _noOfClaimers);
 
         bool success = IERC20(_tokenAddress).transferFrom(msg.sender, address(_newSonik), _totalOutputTokens);
         require(success, Errors.TransferFailed());
