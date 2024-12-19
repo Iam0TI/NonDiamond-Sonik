@@ -91,27 +91,6 @@ contract SonikPoapFacetTest is GetProof {
         vm.stopPrank();
     }
 
-    function test_updateMerkleRoot_notOwner_revert() public {
-        vm.startPrank(user1);
-        vm.expectRevert(abi.encodeWithSignature("UnAuthorizedFunctionCall()"));
-        sonikPoapFacet.updateMerkleRoot(merkleRoot);
-        vm.stopPrank();
-        assertEq(sonikPoapFacet.merkleRoot(), merkleRoot);
-    }
-
-    function test_updateMerkleRoot() public {
-        vm.prank(owner);
-        bytes32 newMerkleRoot = keccak256("new merkle root");
-        sonikPoapFacet.updateMerkleRoot(newMerkleRoot);
-        assertEq(sonikPoapFacet.merkleRoot(), newMerkleRoot);
-    }
-
-    function test_updateClaimersNumber() public {
-        vm.prank(owner);
-        sonikPoapFacet.updateClaimersNumber(100);
-        assertEq(sonikPoapFacet.totalNoOfClaimers(), 100);
-    }
-
     function test_toggleNftRequirement() public {
         vm.prank(owner);
         sonikPoapFacet.toggleNftRequirement();
@@ -155,23 +134,23 @@ contract SonikPoapFacetTest is GetProof {
         signature = abi.encodePacked(r, s, v);
     }
 
-    function test_claimAirdropNFT_with_updateClaimersNumber() public {
-        vm.prank(owner);
-        sonikPoapFacet.updateClaimersNumber(1);
+    // function test_claimAirdropNFT_with_updateClaimersNumber() public {
+    //     vm.prank(owner);
+    //     sonikPoapFacet.updateClaimersNumber(1);
 
-        bytes32[] memory proof = getProofPoap(user1);
-        bytes32[] memory proof2 = getProofPoap(user2);
+    //     bytes32[] memory proof = getProofPoap(user1);
+    //     bytes32[] memory proof2 = getProofPoap(user2);
 
-        bytes memory signature = get_signa(keyUser1);
-        bytes memory signature2 = get_signa(keyUser2);
+    //     bytes memory signature = get_signa(keyUser1);
+    //     bytes memory signature2 = get_signa(keyUser2);
 
-        vm.prank(user1);
-        sonikPoapFacet.claimAirdrop(proof, hash, signature);
+    //     vm.prank(user1);
+    //     sonikPoapFacet.claimAirdrop(proof, hash, signature);
 
-        vm.expectRevert(abi.encodeWithSignature("TotalClaimersExceeded()"));
-        vm.prank(user2);
-        sonikPoapFacet.claimAirdrop(proof2, hash, signature2);
-    }
+    //     vm.expectRevert(abi.encodeWithSignature("TotalClaimersExceeded()"));
+    //     vm.prank(user2);
+    //     sonikPoapFacet.claimAirdrop(proof2, hash, signature2);
+    // }
 
     function test_claimAirdropNFT_with_nft_requirement_on() public {
         vm.prank(owner);

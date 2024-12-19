@@ -15,14 +15,12 @@ contract SonikPoapFacet is ERC721URIStorage {
     using Strings for uint256;
     /*====================    Variable  ====================*/
 
-    bytes32 public merkleRoot;
+    bytes32 public immutable merkleRoot;
     bool public isNftRequired;
     bool public isTimeLocked;
 
     address internal nftAddress;
-    address internal contractAddress;
-    address internal owner;
-    uint256 claimTime;
+    address internal immutable owner;
     uint256 public airdropEndTime;
 
     uint256 public totalNoOfClaimers;
@@ -50,7 +48,6 @@ contract SonikPoapFacet is ERC721URIStorage {
         nftAddress = _nftAddress;
         isNftRequired = _nftAddress != address(0);
 
-        claimTime = _claimTime;
         totalNoOfClaimers = _noOfClaimers;
 
         isTimeLocked = _claimTime != 0;
@@ -136,18 +133,6 @@ contract SonikPoapFacet is ERC721URIStorage {
 
     /*====================  OWNER FUnctions ====================*/
 
-    // @user for the contract owner to update the Merkle root
-    // @dev updates the merkle
-    function updateMerkleRoot(bytes32 _newMerkleRoot) external {
-        onlyOwner();
-
-        bytes32 _oldMerkleRoot = merkleRoot;
-
-        merkleRoot = _newMerkleRoot;
-
-        emit Events.MerkleRootUpdated(_oldMerkleRoot, _newMerkleRoot);
-    }
-
     function updateNftRequirement(address _newNft) external {
         sanityCheck(_newNft);
         onlyOwner();
@@ -177,15 +162,6 @@ contract SonikPoapFacet is ERC721URIStorage {
         airdropEndTime = block.timestamp + _claimTime;
 
         emit Events.ClaimTimeUpdated(msg.sender, _claimTime, airdropEndTime);
-    }
-
-    function updateClaimersNumber(uint256 _noOfClaimers) external {
-        onlyOwner();
-        zeroValueCheck(_noOfClaimers);
-
-        totalNoOfClaimers = _noOfClaimers;
-
-        emit Events.ClaimersNumberUpdated(msg.sender, block.timestamp, _noOfClaimers);
     }
 
     /*====================  private functions ====================*/
